@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:resolv/features/auth/data/repositories/auth_repository.dart';
-import 'package:resolv/features/auth/domain/models/user_model.dart';
+import 'package:resolv/features/auth/repositories/auth_repository.dart';
+import 'package:resolv/models/user_model.dart';
 
 final authControllerProvider = AsyncNotifierProvider<AuthNotifier, UserModel?>(() {
   return AuthNotifier();

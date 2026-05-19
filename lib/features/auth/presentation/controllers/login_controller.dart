@@ -95,7 +95,7 @@ class LoginController extends ChangeNotifier {
 
       _state = _state.copyWith(status: AuthStatus.success);
       notifyListeners();
-      context.go(AppRoute.home);
+      context.go(AppRoute.reportList);
     } catch (e) {
       setUnexpectedError(e.toString());
     } finally {

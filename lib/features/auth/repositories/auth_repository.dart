@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:resolv/core/utils/result.dart';
-import 'package:resolv/features/auth/data/services/auth_service.dart';
-import 'package:resolv/features/auth/domain/models/user_model.dart';
+import 'package:resolv/services/auth_service.dart';
+import 'package:resolv/models/user_model.dart';
 import 'package:resolv/features/auth/presentation/utils/auth_validators.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
