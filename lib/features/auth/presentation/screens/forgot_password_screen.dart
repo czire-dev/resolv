@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:resolv/routing/app_route.dart';
 import '../controllers/forgot_password_controller.dart';
@@ -90,14 +91,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
 // ── Form View ─────────────────────────────────────────────────────────────────
 
-class _FormView extends StatelessWidget {
+class _FormView extends ConsumerWidget {
   const _FormView({super.key, required this.controller, required this.state});
 
   final ForgotPasswordController controller;
   final AuthUiState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Form(
       key: controller.formKey,
       child: AuthFormCard(
@@ -119,7 +120,7 @@ class _FormView extends StatelessWidget {
               prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20),
               autofillHints: const [AutofillHints.email],
               onChanged: controller.onEmailChanged,
-              onFieldSubmitted: (_) => controller.onSubmit(),
+              onFieldSubmitted: (_) => controller.onSubmit(ref, context),
               errorText: controller.emailError,
               validator: AuthValidators.validateEmail,
               enabled: !state.isLoading,
@@ -131,7 +132,7 @@ class _FormView extends StatelessWidget {
               label: 'Send Reset Link',
               isLoading: state.isLoading,
               enabled: controller.canSubmit,
-              onPressed: controller.onSubmit,
+              onPressed: () => controller.onSubmit(ref, context),
             ),
           ],
         ),

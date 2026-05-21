@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:resolv/features/auth/repositories/auth_repository.dart';
 import '../states/auth_ui_state.dart';
 import '../utils/auth_validators.dart';
 
@@ -20,8 +22,7 @@ class ForgotPasswordController extends ChangeNotifier {
       _emailTouched ? AuthValidators.validateEmail(emailController.text) : null;
 
   bool get canSubmit =>
-      !_state.isLoading &&
-      AuthValidators.validateEmail(emailController.text) == null;
+      !_state.isLoading && AuthValidators.validateEmail(emailController.text) == null;
 
   // ── Listeners ─────────────────────────────────────────────────────────────
 
@@ -38,10 +39,11 @@ class ForgotPasswordController extends ChangeNotifier {
 
   // ── Submit ────────────────────────────────────────────────────────────────
 
-  Future<void> onSubmit() async {
+  Future<void> onSubmit(WidgetRef ref, BuildContext context) async {
     _emailTouched = true;
 
-    if (!formKey.currentState!.validate()) {
+    final isValid = formKey.currentState?.validate() ?? false;
+    if (!isValid) {
       _state = _state.copyWith(status: AuthStatus.validationError);
       notifyListeners();
       return;
@@ -51,25 +53,36 @@ class ForgotPasswordController extends ChangeNotifier {
     // Example: ref.read(authControllerProvider.notifier)
     //            .sendPasswordResetEmail(emailController.text.trim())
     _setLoading();
-    await _simulateNetworkDelay(); // Remove when backend is wired.
-    _setSuccess(); // Replace with actual result handling.
+
+    try {
+      print('Email: ${emailController.text.trim()}');
+      final result = await ref
+          .read(authRepositoryProvider)
+          .sendPasswordResetEmail(emailController.text.trim());
+      print('Result: $result');
+      if (result.isSuccess) {
+        _setSuccess();
+      } else {
+        setAuthError(result.error?.message ?? "Failed to send reset email. Please try again.");
+      }
+    } catch (e) {
+      print('Error sending password reset email: $e');
+      setUnexpectedError("An unexpected error occurred. Please try again.");
+      return;
+    } finally {
+      if (_state.status == AuthStatus.loading) _setIdle();
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   void setAuthError(String message) {
-    _state = _state.copyWith(
-      status: AuthStatus.authError,
-      errorMessage: message,
-    );
+    _state = _state.copyWith(status: AuthStatus.authError, errorMessage: message);
     notifyListeners();
   }
 
   void setUnexpectedError(String message) {
-    _state = _state.copyWith(
-      status: AuthStatus.unexpectedError,
-      errorMessage: message,
-    );
+    _state = _state.copyWith(status: AuthStatus.unexpectedError, errorMessage: message);
     notifyListeners();
   }
 
@@ -88,13 +101,17 @@ class ForgotPasswordController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _setIdle() {
+    _state = _state.copyWith(status: AuthStatus.idle);
+    notifyListeners();
+  }
+
   void _clearErrorIfPresent() {
     if (_state.hasError) clearError();
   }
 
   /// TODO: Remove once backend is integrated.
-  Future<void> _simulateNetworkDelay() =>
-      Future.delayed(const Duration(milliseconds: 1200));
+  Future<void> _simulateNetworkDelay() => Future.delayed(const Duration(milliseconds: 1200));
 
   @override
   void dispose() {

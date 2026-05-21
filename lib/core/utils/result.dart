@@ -5,9 +5,9 @@ class Result<T> {
 
   const Result._({this.data, this.error});
 
-  bool get isSuccess => data != null;
+  bool get isSuccess => error == null;
   bool get isFailure => error != null;
-
+  
   static Result<T> success<T>(T data) => Result._(data: data);
   static Result<T> failure<T>(Failure error) => Result._(error: error);
 }

@@ -38,6 +38,18 @@ class AuthRepository {
     }
   }
 
+  Future<Result<void>> sendPasswordResetEmail(String email) async {
+    final result = await _service.sendPasswordResetEmail(email);
+    print('AuthRepository.sendPasswordResetEmail result: $result');
+    if (result.isSuccess) {
+      return Result.success(null);
+    } else {
+      print('Error code: ${result.error?.code}, message: ${result.error?.message}');
+      final msg = AuthValidators.mapFirebaseError(result.error!.code ?? "");
+      return Result.failure(Failure(msg, code: result.error?.code));
+    }
+  }
+
   Future<Result<void>> signOut() async {
     return await _service.signOut();
   }
