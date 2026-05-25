@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
+import 'package:resolv/core/enums/report_enums.dart';
 
 /// Reusable form fields used by the Create Report screen.
 /// All widgets are UI-only — no submission logic.
@@ -8,17 +8,16 @@ import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
 
 /// Grid of tappable category tiles.
 class CategorySelector extends StatefulWidget {
-  const CategorySelector({super.key, this.onChanged});
+  const CategorySelector({super.key, this.selectedCategory, this.onChanged});
 
-  final ValueChanged<ReportCategory?>? onChanged;
+  final ReportCategory? selectedCategory;
+  final ValueChanged<ReportCategory>? onChanged;
 
   @override
   State<CategorySelector> createState() => _CategorySelectorState();
 }
 
 class _CategorySelectorState extends State<CategorySelector> {
-  ReportCategory? _selected;
-
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -37,11 +36,10 @@ class _CategorySelectorState extends State<CategorySelector> {
           crossAxisSpacing: 10,
           childAspectRatio: 1.1,
           children: ReportCategory.values.map((cat) {
-            final isSelected = _selected == cat;
+            final isSelected = widget.selectedCategory == cat;
             return GestureDetector(
               onTap: () {
-                setState(() => _selected = isSelected ? null : cat);
-                widget.onChanged?.call(isSelected ? null : cat);
+                widget.onChanged?.call(cat);
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
@@ -108,6 +106,7 @@ class ReportTextField extends StatelessWidget {
     this.textInputAction,
     this.maxLines = 1,
     this.minLines,
+    this.onChanged,
     this.isRequired = false,
     this.validator,
     this.enabled = true,
@@ -121,6 +120,7 @@ class ReportTextField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final int maxLines;
   final int? minLines;
+  final ValueChanged<String>? onChanged;
   final bool isRequired;
   final FormFieldValidator<String>? validator;
   final bool enabled;
@@ -137,6 +137,7 @@ class ReportTextField extends StatelessWidget {
           keyboardType: keyboardType,
           textInputAction: textInputAction,
           maxLines: maxLines,
+          onChanged: onChanged,
           minLines: minLines,
           validator: validator,
           enabled: enabled,

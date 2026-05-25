@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
-import 'status_badge.dart';
+import 'package:resolv/core/enums/report_enums.dart';
 
 /// Horizontal scrollable filter chips for filtering reports by status.
 /// Stateful for visual selection feedback only — no real filtering logic.
 class ReportFilterBar extends StatefulWidget {
-  const ReportFilterBar({
-    super.key,
-    this.onFilterChanged,
-  });
+  const ReportFilterBar({super.key, this.onFilterChanged});
 
   /// Callback fires with selected status (null = All).
   /// Wire to real filter logic when backend is ready.
@@ -34,11 +30,7 @@ class _ReportFilterBarState extends State<ReportFilterBar> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         children: [
-          _FilterChip(
-            label: 'All',
-            isSelected: _selected == null,
-            onTap: () => _select(null),
-          ),
+          _FilterChip(label: 'All', isSelected: _selected == null, onTap: () => _select(null)),
           const SizedBox(width: 8),
           ...ReportStatus.values.map((s) {
             return Padding(
@@ -84,9 +76,7 @@ class _FilterChip extends StatelessWidget {
           color: isSelected ? colors.primary : colors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(100),
           border: Border.all(
-            color: isSelected
-                ? colors.primary
-                : colors.outlineVariant.withOpacity(0.6),
+            color: isSelected ? colors.primary : colors.outlineVariant.withOpacity(0.6),
             width: 1,
           ),
           boxShadow: isSelected
@@ -95,7 +85,7 @@ class _FilterChip extends StatelessWidget {
                     color: colors.primary.withOpacity(0.25),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
-                  )
+                  ),
                 ]
               : [],
         ),

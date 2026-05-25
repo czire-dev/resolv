@@ -2,58 +2,7 @@
 /// Replace with real Riverpod providers once the backend layer is wired.
 library;
 
-// ── Report Status ─────────────────────────────────────────────────────────────
-
-enum ReportStatus { pending, inProgress, resolved, rejected }
-
-extension ReportStatusX on ReportStatus {
-  String get label {
-    switch (this) {
-      case ReportStatus.pending:     return 'Pending';
-      case ReportStatus.inProgress:  return 'In Progress';
-      case ReportStatus.resolved:    return 'Resolved';
-      case ReportStatus.rejected:    return 'Rejected';
-    }
-  }
-}
-
-// ── Report Category ───────────────────────────────────────────────────────────
-
-enum ReportCategory {
-  infrastructure,
-  sanitation,
-  publicSafety,
-  noise,
-  flooding,
-  streetLight,
-  other,
-}
-
-extension ReportCategoryX on ReportCategory {
-  String get label {
-    switch (this) {
-      case ReportCategory.infrastructure: return 'Infrastructure';
-      case ReportCategory.sanitation:     return 'Sanitation';
-      case ReportCategory.publicSafety:   return 'Public Safety';
-      case ReportCategory.noise:          return 'Noise Complaint';
-      case ReportCategory.flooding:       return 'Flooding';
-      case ReportCategory.streetLight:    return 'Street Light';
-      case ReportCategory.other:          return 'Other';
-    }
-  }
-
-  String get emoji {
-    switch (this) {
-      case ReportCategory.infrastructure: return '🏗️';
-      case ReportCategory.sanitation:     return '🗑️';
-      case ReportCategory.publicSafety:   return '🚨';
-      case ReportCategory.noise:          return '📢';
-      case ReportCategory.flooding:       return '🌊';
-      case ReportCategory.streetLight:    return '💡';
-      case ReportCategory.other:          return '📋';
-    }
-  }
-}
+import 'package:resolv/core/enums/report_enums.dart';
 
 // ── UI Model ──────────────────────────────────────────────────────────────────
 
