@@ -1,63 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
+import 'package:resolv/features/report/user/presentation/controllers/report_controller.dart';
 import 'package:resolv/routing/app_route.dart';
 import '../widgets/report_form_fields.dart';
 
 /// Screen for composing and submitting a new barangay report.
-/// All form interactions are UI-only — no actual submission.
-///
-/// TODO: Connect [_handleSubmit] to the Riverpod reports notifier.
-/// TODO: Replace Navigator.pop with GoRouter when routing is set up.
-class CreateReportScreen extends StatefulWidget {
+/// Connected to [ReportController] via Riverpod for state management.
+class CreateReportScreen extends ConsumerWidget {
   const CreateReportScreen({super.key, this.onBack, this.onSubmitSuccess});
 
   final VoidCallback? onBack;
   final VoidCallback? onSubmitSuccess;
 
-  @override
-  State<CreateReportScreen> createState() => _CreateReportScreenState();
-}
-
-class _CreateReportScreenState extends State<CreateReportScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _addressController = TextEditingController();
-
-  ReportCategory? _selectedCategory;
-  bool _isLoading = false;
-
-  bool get _canSubmit =>
-      _titleController.text.trim().isNotEmpty &&
-      _descriptionController.text.trim().isNotEmpty &&
-      _selectedCategory != null;
-
-  @override
-  void initState() {
-    super.initState();
-    // Rebuild when text changes so submit button state updates.
-    _titleController.addListener(_rebuild);
-    _descriptionController.addListener(_rebuild);
-  }
-
-  void _rebuild() => setState(() {});
-
-  /// UI-only simulated submit.
-  /// TODO: Replace with real Riverpod notifier call.
-  Future<void> _handleSubmit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 1200));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-
-    // Show success bottom sheet, then navigate back.
-    _showSuccessSheet();
-  }
-
-  void _showSuccessSheet() {
+  void _showSuccessSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -65,24 +21,15 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       builder: (_) => _SubmitSuccessSheet(
         onDone: () {
           Navigator.of(context).pop(); // close sheet
-          widget.onSubmitSuccess?.call();
+          onSubmitSuccess?.call();
         },
       ),
     );
   }
 
   @override
-  void dispose() {
-    _titleController.removeListener(_rebuild);
-    _descriptionController.removeListener(_rebuild);
-    _titleController.dispose();
-    _descriptionController.dispose();
-    _addressController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reportController = ref.watch(reportControllerProvider);
     final colors = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
@@ -94,13 +41,13 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         scrolledUnderElevation: 1,
         shadowColor: colors.shadow.withOpacity(0.08),
         surfaceTintColor: colors.surface,
-        leading: _BackButton(onTap: widget.onBack ?? () => context.go(AppRoute.reportList)),
+        leading: _BackButton(onTap: onBack ?? () => context.go(AppRoute.reportList)),
         title: Text('New Report', style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
       ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Form(
-          key: _formKey,
+          key: reportController.formKey,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
             child: Column(
@@ -115,23 +62,26 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
                 // ── Report Title ────────────────────────────────────────
                 ReportTextField(
-                  controller: _titleController,
+                  controller: reportController.titleController,
                   label: 'Report Title',
                   hint: 'e.g. Broken street light on Rizal Ave',
                   prefixIcon: const Icon(Icons.title_rounded, size: 20),
                   textInputAction: TextInputAction.next,
                   isRequired: true,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Title is required.' : null,
+                  onChanged: reportController.onTitleChanged,
                 ),
                 const SizedBox(height: 20),
 
                 // ── Category ────────────────────────────────────────────
-                CategorySelector(onChanged: (cat) => setState(() => _selectedCategory = cat)),
+                CategorySelector(
+                  selectedCategory: reportController.selectedCategory,
+                  onChanged: (cat) => reportController.selectedCategory = cat,
+                ),
                 const SizedBox(height: 20),
 
                 // ── Description ─────────────────────────────────────────
                 ReportTextField(
-                  controller: _descriptionController,
+                  controller: reportController.descriptionController,
                   label: 'Description',
                   hint:
                       'Describe the issue in detail. Include when it started, how severe it is, and who it affects.',
@@ -139,26 +89,49 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   minLines: 3,
                   keyboardType: TextInputType.multiline,
                   isRequired: true,
-                  validator: (v) => (v == null || v.trim().length < 20)
-                      ? 'Please provide at least 20 characters.'
-                      : null,
+                  onChanged: reportController.onDescriptionChanged,
                 ),
                 const SizedBox(height: 20),
 
                 // ── Address ─────────────────────────────────────────────
                 ReportTextField(
-                  controller: _addressController,
+                  controller: reportController.addressController,
                   label: 'Location / Address',
                   hint: 'e.g. Block 5, Lot 12, Purok 3',
                   prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
                   textInputAction: TextInputAction.done,
                   isRequired: false,
+                  onChanged: reportController.onAddressChanged,
                 ),
                 const SizedBox(height: 20),
 
                 // ── Photo ───────────────────────────────────────────────
                 const ImagePickerField(),
                 const SizedBox(height: 28),
+
+                // ── Error Banner ────────────────────────────────────────
+                if (reportController.errorMessage != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colors.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline, color: colors.error, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            reportController.errorMessage!,
+                            style: text.bodySmall?.copyWith(color: colors.onErrorContainer),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // ── Disclaimer ──────────────────────────────────────────
                 _DisclaimerText(),
@@ -170,9 +143,14 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
       // ── Submit Button ─────────────────────────────────────────────────────
       bottomNavigationBar: _SubmitBar(
-        canSubmit: _canSubmit,
-        isLoading: _isLoading,
-        onSubmit: _handleSubmit,
+        canSubmit: reportController.canSubmit,
+        isLoading: reportController.isSubmitting,
+        onSubmit: () async {
+          await reportController.onSubmit(ref, context);
+          if (reportController.errorMessage == null) {
+            _showSuccessSheet(context);
+          }
+        },
       ),
     );
   }

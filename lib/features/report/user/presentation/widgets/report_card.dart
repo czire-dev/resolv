@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
 import 'status_badge.dart';
 
@@ -7,12 +8,7 @@ import 'status_badge.dart';
 /// [showSubmitter] — set true in admin view to display the reporter's name.
 /// [onTap]        — navigation callback; connect to GoRouter when ready.
 class ReportCard extends StatelessWidget {
-  const ReportCard({
-    super.key,
-    required this.report,
-    this.onTap,
-    this.showSubmitter = false,
-  });
+  const ReportCard({super.key, required this.report, this.onTap, this.showSubmitter = false});
 
   final ReportUiModel report;
   final VoidCallback? onTap;
@@ -29,10 +25,7 @@ class ReportCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: colors.outlineVariant.withOpacity(0.5),
-            width: 1,
-          ),
+          border: Border.all(color: colors.outlineVariant.withOpacity(0.5), width: 1),
           boxShadow: [
             BoxShadow(
               color: colors.shadow.withOpacity(0.05),
@@ -78,10 +71,7 @@ class ReportCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 report.description,
-                style: text.bodySmall?.copyWith(
-                  color: colors.onSurfaceVariant,
-                  height: 1.5,
-                ),
+                style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant, height: 1.5),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -104,10 +94,7 @@ class ReportCard extends StatelessWidget {
                 children: [
                   // Report ID
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
                       color: colors.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(6),
@@ -125,11 +112,7 @@ class ReportCard extends StatelessWidget {
 
                   // Submitter (admin view only)
                   if (showSubmitter) ...[
-                    Icon(
-                      Icons.person_outline_rounded,
-                      size: 12,
-                      color: colors.onSurfaceVariant,
-                    ),
+                    Icon(Icons.person_outline_rounded, size: 12, color: colors.onSurfaceVariant),
                     const SizedBox(width: 3),
                     Expanded(
                       child: Text(

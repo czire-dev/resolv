@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
+import 'package:resolv/core/enums/report_enums.dart';
 
 /// Compact status pill badge for displaying a report's current lifecycle state.
 /// Uses semantic color tokens from the active theme.
 class StatusBadge extends StatelessWidget {
-  const StatusBadge({
-    super.key,
-    required this.status,
-    this.size = StatusBadgeSize.medium,
-  });
+  const StatusBadge({super.key, required this.status, this.size = StatusBadgeSize.medium});
 
   final ReportStatus status;
   final StatusBadgeSize size;
@@ -19,24 +15,24 @@ class StatusBadge extends StatelessWidget {
     final config = _BadgeConfig.from(status, colors);
 
     final fontSize = switch (size) {
-      StatusBadgeSize.small  => 10.0,
+      StatusBadgeSize.small => 10.0,
       StatusBadgeSize.medium => 11.5,
-      StatusBadgeSize.large  => 13.0,
+      StatusBadgeSize.large => 13.0,
     };
     final iconSize = switch (size) {
-      StatusBadgeSize.small  => 9.0,
+      StatusBadgeSize.small => 9.0,
       StatusBadgeSize.medium => 11.0,
-      StatusBadgeSize.large  => 13.0,
+      StatusBadgeSize.large => 13.0,
     };
     final hPad = switch (size) {
-      StatusBadgeSize.small  => 7.0,
+      StatusBadgeSize.small => 7.0,
       StatusBadgeSize.medium => 10.0,
-      StatusBadgeSize.large  => 12.0,
+      StatusBadgeSize.large => 12.0,
     };
     final vPad = switch (size) {
-      StatusBadgeSize.small  => 3.0,
+      StatusBadgeSize.small => 3.0,
       StatusBadgeSize.medium => 4.5,
-      StatusBadgeSize.large  => 6.0,
+      StatusBadgeSize.large => 6.0,
     };
 
     return Container(
@@ -52,10 +48,7 @@ class StatusBadge extends StatelessWidget {
           Container(
             width: iconSize,
             height: iconSize,
-            decoration: BoxDecoration(
-              color: config.dot,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: config.dot, shape: BoxShape.circle),
           ),
           const SizedBox(width: 5),
           Text(

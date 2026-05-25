@@ -1,151 +1,204 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:resolv/core/enums/report_enums.dart';
+import 'package:resolv/features/report/providers/report_providers.dart';
 import 'package:resolv/features/report/user/presentation/widgets/report_filter.dart';
 import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
+import 'package:resolv/models/report_model.dart';
 import 'package:resolv/routing/app_route.dart';
 import '../widgets/report_card.dart';
 import '../widgets/report_empty_state.dart';
 
 /// Displays the authenticated user's submitted reports.
 /// Supports status filtering via [ReportFilterBar].
-///
-/// TODO: Replace [kMockReports] with a Riverpod provider.
 /// TODO: Connect [onNavigateToCreate] and [onNavigateToDetail] to GoRouter.
-class ReportListScreen extends StatefulWidget {
+class ReportListScreen extends ConsumerStatefulWidget {
   const ReportListScreen({super.key, this.onNavigateToCreate, this.onNavigateToDetail});
 
   final VoidCallback? onNavigateToCreate;
   final ValueChanged<ReportUiModel>? onNavigateToDetail;
 
   @override
-  State<ReportListScreen> createState() => _ReportListScreenState();
+  ConsumerState<ReportListScreen> createState() => _ReportListScreenState();
 }
 
-class _ReportListScreenState extends State<ReportListScreen> {
+class _ReportListScreenState extends ConsumerState<ReportListScreen> {
   ReportStatus? _activeFilter;
 
-  List<ReportUiModel> get _filtered => _activeFilter == null
-      ? kMockReports
-      : kMockReports.where((r) => r.status == _activeFilter).toList();
+  List<ReportUiModel> _mapReports(List<ReportModel> reports) {
+    return reports
+        .map(
+          (report) => ReportUiModel(
+            id: report.id,
+            title: report.title,
+            description: report.description,
+            category: report.category,
+            status: report.status,
+            submittedAt: report.submittedAt,
+            submittedByName: report.submittedByName,
+            address: report.address,
+            imageUrl: report.imageUrl,
+            adminNote: report.adminNote,
+            updatedAt: report.updatedAt,
+          ),
+        )
+        .toList();
+  }
+
+  List<ReportUiModel> _filteredReports(List<ReportUiModel> reports) {
+    return _activeFilter == null
+        ? reports
+        : reports.where((report) => report.status == _activeFilter).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final reportsAsync = ref.watch(reportControllerProvider);
 
-    return Scaffold(
-      backgroundColor: colors.surface,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // ── App Bar ───────────────────────────────────────────────────
-            SliverAppBar(
-              pinned: true,
-              backgroundColor: colors.surface,
-              elevation: 0,
-              scrolledUnderElevation: 1,
-              shadowColor: colors.shadow.withOpacity(0.08),
-              surfaceTintColor: colors.surface,
-              title: Text(
-                'My Reports',
-                style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              actions: [
-                // Summary badge
-                _StatsSummaryBadge(reports: kMockReports),
-                const SizedBox(width: 16),
-              ],
-            ),
-
-            // ── Stats Row ─────────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-                child: _UserStatsRow(reports: kMockReports),
+    return reportsAsync.when(
+      loading: () => Scaffold(
+        backgroundColor: colors.surface,
+        body: const SafeArea(
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (error, _) => Scaffold(
+        backgroundColor: colors.surface,
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Failed to load reports: $error',
+                textAlign: TextAlign.center,
+                style: text.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
               ),
             ),
+          ),
+        ),
+      ),
+      data: (reports) {
+        final uiReports = _mapReports(reports ?? const <ReportModel>[]);
+        final filteredReports = _filteredReports(uiReports);
 
-            // ── Filter Bar ────────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16, bottom: 4),
-                child: ReportFilterBar(onFilterChanged: (s) => setState(() => _activeFilter = s)),
-              ),
-            ),
-
-            // ── Section header ────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-                child: Row(
-                  children: [
-                    Text(
-                      _activeFilter == null ? 'All Reports' : '${_activeFilter!.label} Reports',
-                      style: text.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: colors.onSurface,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: colors.primaryContainer,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${_filtered.length}',
-                        style: text.labelSmall?.copyWith(
-                          color: colors.onPrimaryContainer,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+        return Scaffold(
+          backgroundColor: colors.surface,
+          body: SafeArea(
+            child: CustomScrollView(
+              slivers: [
+                // ── App Bar ───────────────────────────────────────────────────
+                SliverAppBar(
+                  pinned: true,
+                  backgroundColor: colors.surface,
+                  elevation: 0,
+                  scrolledUnderElevation: 1,
+                  shadowColor: colors.shadow.withOpacity(0.08),
+                  surfaceTintColor: colors.surface,
+                  title: Text(
+                    'My Reports',
+                    style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  actions: [
+                    _StatsSummaryBadge(reports: uiReports),
+                    const SizedBox(width: 16),
                   ],
                 ),
-              ),
-            ),
 
-            // ── Report List ───────────────────────────────────────────────
-            _filtered.isEmpty
-                ? SliverFillRemaining(
-                    child: ReportEmptyState(
-                      title: 'No ${_activeFilter?.label ?? ''} reports',
-                      subtitle: 'Try selecting a different filter or submit a new report.',
-                    ),
-                  )
-                : SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-                    sliver: SliverList.separated(
-                      itemCount: _filtered.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final report = _filtered[index];
-                        return ReportCard(
-                          report: report,
-                          onTap: () =>
-                              context.go(AppRoute.reportDetail.replaceFirst(':id', report.id)),
-                        );
-                      },
+                // ── Stats Row ─────────────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+                    child: _UserStatsRow(reports: uiReports),
+                  ),
+                ),
+
+                // ── Filter Bar ────────────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 16, bottom: 4),
+                    child: ReportFilterBar(
+                      onFilterChanged: (s) => setState(() => _activeFilter = s),
                     ),
                   ),
-          ],
-        ),
-      ),
+                ),
 
-      // ── FAB ───────────────────────────────────────────────────────────────
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go(AppRoute.createReport),
-        backgroundColor: colors.primary,
-        foregroundColor: colors.onPrimary,
-        elevation: 3,
-        icon: const Icon(Icons.add_rounded),
-        label: Text(
-          'New Report',
-          style: text.labelLarge?.copyWith(color: colors.onPrimary, fontWeight: FontWeight.w700),
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
+                // ── Section header ────────────────────────────────────────────
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+                    child: Row(
+                      children: [
+                        Text(
+                          _activeFilter == null ? 'All Reports' : '${_activeFilter!.label} Reports',
+                          style: text.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: colors.onSurface,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: colors.primaryContainer,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '${filteredReports.length}',
+                            style: text.labelSmall?.copyWith(
+                              color: colors.onPrimaryContainer,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // ── Report List ───────────────────────────────────────────────
+                filteredReports.isEmpty
+                    ? SliverFillRemaining(
+                        child: ReportEmptyState(
+                          title: 'No ${_activeFilter?.label ?? ''} reports',
+                          subtitle: 'Try selecting a different filter or submit a new report.',
+                        ),
+                      )
+                    : SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                        sliver: SliverList.separated(
+                          itemCount: filteredReports.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final report = filteredReports[index];
+                            return ReportCard(
+                              report: report,
+                              onTap: () => context.go(
+                                AppRoute.reportDetail.replaceFirst(':id', report.id),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+              ],
+            ),
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => context.go(AppRoute.createReport),
+            backgroundColor: colors.primary,
+            foregroundColor: colors.onPrimary,
+            elevation: 3,
+            icon: const Icon(Icons.add_rounded),
+            label: Text(
+              'New Report',
+              style: text.labelLarge?.copyWith(color: colors.onPrimary, fontWeight: FontWeight.w700),
+            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        );
+      },
     );
   }
 }
@@ -159,7 +212,6 @@ class _StatsSummaryBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final pendingCount = reports
         .where((r) => r.status == ReportStatus.pending || r.status == ReportStatus.inProgress)
         .length;
