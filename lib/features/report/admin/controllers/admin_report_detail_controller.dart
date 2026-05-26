@@ -15,7 +15,8 @@ class AdminReportDetailController extends ChangeNotifier {
   AdminReportDetailController(this._ref, this.report) {
     // Pre-fill with current values
     _selectedStatus = report.status;
-    _noteController.text = report.adminNote ?? '';
+    // TODO: Handle admin note if it's added to the ReportModel
+    // _noteController.text = report.adminNote ?? '';
   }
 
   late ReportStatus _selectedStatus;
@@ -28,8 +29,9 @@ class AdminReportDetailController extends ChangeNotifier {
   TextEditingController get noteController => _noteController;
   String? get errorMessage => _errorMessage;
 
-  bool get hasChanges =>
-      _selectedStatus != report.status || _noteController.text.trim() != (report.adminNote ?? '');
+  // bool get hasChanges =>
+  //     _selectedStatus != report.status || _noteController.text.trim() != (report.adminNote ?? '');
+  bool get hasChanges => _selectedStatus != report.status;
 
   void selectStatus(ReportStatus status) {
     _selectedStatus = status;

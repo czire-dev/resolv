@@ -3,7 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:resolv/features/report/admin/widgets/admin_status_bottom_modal_sheet.dart';
+import 'package:resolv/models/ai_analysis_model.dart';
 import 'package:resolv/models/report_model.dart';
+import 'package:resolv/models/report_remark_model.dart';
 
 class AdminReportDetailScreen extends ConsumerWidget {
   final ReportModel report;
@@ -84,7 +86,7 @@ class AdminReportDetailScreen extends ConsumerWidget {
 }
 
 class _AiAnalysisCard extends StatelessWidget {
-  final AiAnalysis analysis;
+  final AiAnalysisModel analysis;
   const _AiAnalysisCard({required this.analysis});
 
   @override

@@ -40,7 +40,6 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
             submittedByName: report.submittedByName,
             address: report.address,
             imageUrl: report.imageUrl,
-            adminNote: report.adminNote,
             updatedAt: report.updatedAt,
           ),
         )

@@ -111,9 +111,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
                     return const Scaffold(
-                      body: SafeArea(
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
+                      body: SafeArea(child: Center(child: CircularProgressIndicator())),
                     );
                   }
 
@@ -121,9 +119,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   if (result == null || result.isFailure || result.data == null) {
                     return Scaffold(
                       body: SafeArea(
-                        child: Center(
-                          child: Text(result?.error?.message ?? 'Report not found'),
-                        ),
+                        child: Center(child: Text(result?.error?.message ?? 'Report not found')),
                       ),
                     );
                   }
@@ -139,7 +135,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     submittedByName: fetchedReport.submittedByName,
                     address: fetchedReport.address,
                     imageUrl: fetchedReport.imageUrl,
-                    adminNote: fetchedReport.adminNote,
                     updatedAt: fetchedReport.updatedAt,
                   );
 

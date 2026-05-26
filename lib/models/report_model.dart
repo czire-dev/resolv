@@ -2,80 +2,51 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:resolv/core/enums/report_enums.dart';
-
-class AiAnalysis {
-  final String? predictedCategory;
-  final String? priority; // 'low' | 'medium' | 'high'
-  final List<String> tags;
-
-  const AiAnalysis({this.predictedCategory, this.priority, this.tags = const []});
-
-  factory AiAnalysis.fromMap(Map<String, dynamic> map) {
-    return AiAnalysis(
-      predictedCategory: map['predictedCategory'] as String?,
-      priority: map['priority'] as String?,
-      tags: List<String>.from(map['tags'] ?? []),
-    );
-  }
-
-  Map<String, dynamic> toMap() => {
-    'predictedCategory': predictedCategory,
-    'priority': priority,
-    'tags': tags,
-  };
-}
-
-class ReportRemark {
-  final String status;
-  final String remark;
-  final DateTime updatedAt;
-
-  const ReportRemark({required this.status, required this.remark, required this.updatedAt});
-
-  factory ReportRemark.fromMap(Map<String, dynamic> map) {
-    return ReportRemark(
-      status: map['status'] as String,
-      remark: map['remark'] as String? ?? '',
-      updatedAt: (map['updatedAt'] as Timestamp).toDate(),
-    );
-  }
-
-  Map<String, dynamic> toMap() => {
-    'status': status,
-    'remark': remark,
-    'updatedAt': Timestamp.fromDate(updatedAt),
-  };
-}
+import 'package:resolv/models/ai_analysis_model.dart';
+import 'package:resolv/models/report_remark_model.dart';
 
 class ReportModel {
   final String id;
+
+  final String incidentId;
+
   final String title;
   final String description;
+
   final ReportCategory category;
-  final ReportStatus status; // 'pending' | 'in_progress' | 'resolved'
+
+  final ReportStatus status;
+
   final DateTime submittedAt;
-  final String submittedByName;
-  final String submittedByUid;
-  final String address;
-  final String? imageUrl;
-  final String? adminNote; // legacy single note — keep for backwards compat
   final DateTime? updatedAt;
-  final AiAnalysis? aiAnalysis;
+
+  final String submittedByUid;
+  final String submittedByName;
+
+  final String address;
+
+  final String? imageUrl;
+
+  final AiAnalysisModel? aiAnalysis;
+
+  final bool isDuplicate;
+
   final List<ReportRemark> remarks;
 
   const ReportModel({
     required this.id,
+    required this.incidentId,
     required this.title,
     required this.description,
     required this.category,
     required this.status,
     required this.submittedAt,
-    required this.submittedByName,
     required this.submittedByUid,
+    required this.submittedByName,
     required this.address,
-    this.imageUrl,
-    this.adminNote,
+    required this.isDuplicate,
     this.updatedAt,
+    this.imageUrl,
     this.aiAnalysis,
     this.remarks = const [],
   });
@@ -99,16 +70,17 @@ class ReportModel {
       submittedByUid: data['submittedByUid'] as String? ?? '',
       address: data['address'] as String? ?? '',
       imageUrl: data['imageUrl'] as String?,
-      adminNote: data['adminNote'] as String?,
       updatedAt: data['updatedAt'] != null ? (data['updatedAt'] as Timestamp).toDate() : null,
       aiAnalysis: data['aiAnalysis'] != null
-          ? AiAnalysis.fromMap(data['aiAnalysis'] as Map<String, dynamic>)
+          ? AiAnalysisModel.fromJson(data['aiAnalysis'] as Map<String, dynamic>)
           : null,
       remarks: data['remarks'] != null
           ? (data['remarks'] as List)
                 .map((r) => ReportRemark.fromMap(r as Map<String, dynamic>))
                 .toList()
           : [],
+      incidentId: data['incidentId'] as String? ?? '',
+      isDuplicate: data['isDuplicate'] as bool? ?? false,
     );
   }
 }

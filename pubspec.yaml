@@ -41,6 +41,7 @@ dependencies:
   go_router: ^17.2.3
   cloud_firestore: ^6.4.1
   async_notifier: ^0.7.0
+  firebase_ai: ^3.12.1
 
 dev_dependencies:
   flutter_test:
