@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
-import 'package:resolv/routing/app_route.dart';
+import 'package:resolv/routing/app_routes.dart';
 import '../widgets/status_badge.dart';
 
 /// Detailed view of a single report for the authenticated user.
@@ -33,7 +33,7 @@ class ReportDetailScreen extends StatelessWidget {
             scrolledUnderElevation: 1,
             shadowColor: colors.shadow.withOpacity(0.08),
             surfaceTintColor: colors.surface,
-            leading: _BackButton(onTap: onBack ?? () => context.go(AppRoute.reportList)),
+            leading: _BackButton(onTap: onBack ?? () => context.go(AppRoutes.userReports)),
             title: Text(
               report.id,
               style: text.titleMedium?.copyWith(

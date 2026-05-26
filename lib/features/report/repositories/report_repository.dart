@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/core/utils/result.dart';
 import 'package:resolv/models/report_model.dart';
@@ -58,13 +59,17 @@ class ReportRepository {
   }
 
   /// Update report status.
-  Future<Result<void>> updateReportStatus(String reportId, ReportStatus newStatus) async {
-    final result = await _service.updateReportStatus(reportId, newStatus);
+  Future<Result<void>> updateReportStatus({
+    required String reportId,
+    required ReportStatus newStatus,
+    String? adminNote,
+  }) async {
+    final result = await _service.updateReportStatus(reportId, newStatus, adminNote);
     return result;
   }
 
   /// Add admin note to a report.
-  Future<Result<void>> addAdminNote(String reportId, String note) async {
+  Future<Result<void>> addAdminNote({required String reportId, required String note}) async {
     final result = await _service.addAdminNote(reportId, note);
     return result;
   }
@@ -73,6 +78,19 @@ class ReportRepository {
   Future<Result<void>> deleteReport(String reportId) async {
     final result = await _service.deleteReport(reportId);
     return result;
+  }
+
+  /// Get the Firestore document for a report.
+  Future<DocumentSnapshot?> getReportDocument(String reportId) {
+    return _service.getReportDocument(reportId);
+  }
+
+  /// Fetch the next page of admin reports.
+  Future<Result<List<ReportModel>>> fetchMoreReports({
+    required DocumentSnapshot lastDocument,
+    int limit = 15,
+  }) {
+    return _service.fetchMoreReports(lastDocument: lastDocument, limit: limit);
   }
 
   /// Stream of reports for a specific user (real-time updates).

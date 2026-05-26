@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:resolv/routing/app_route.dart';
+import 'package:resolv/routing/app_routes.dart';
 import '../controllers/register_controller.dart';
 import '../utils/auth_theme.dart';
 import '../utils/auth_validators.dart';
@@ -182,7 +182,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen>
                   promptText: 'Already have an account?',
                   actionText: 'Sign In',
                   onActionTap: () {
-                    context.go(AppRoute.login);
+                    context.go(AppRoutes.login);
                   },
                 ),
               ),

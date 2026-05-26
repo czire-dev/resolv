@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:resolv/routing/app_route.dart';
+import 'package:resolv/routing/app_routes.dart';
 import '../controllers/login_controller.dart';
 import '../utils/auth_theme.dart';
 import '../utils/auth_validators.dart';
@@ -127,7 +127,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                       child: AuthTextButton(
                         label: 'Forgot password?',
                         onTap: () {
-                          context.go(AppRoute.forgotPassword);
+                          context.go(AppRoutes.forgotPassword);
                         },
                       ),
                     ),
@@ -151,7 +151,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with SingleTickerProv
                   promptText: "Don't have an account?",
                   actionText: 'Sign Up',
                   onActionTap: () {
-                    context.go(AppRoute.register);
+                    context.go(AppRoutes.register);
                   },
                 ),
               ),

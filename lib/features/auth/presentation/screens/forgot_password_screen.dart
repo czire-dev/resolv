@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:resolv/routing/app_route.dart';
+import 'package:resolv/routing/app_routes.dart';
 import '../controllers/forgot_password_controller.dart';
 import '../states/auth_ui_state.dart';
 import '../utils/auth_theme.dart';
@@ -61,7 +61,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Back Button ───────────────────────────────────────────────
-            _BackButton(onTap: () => context.go(AppRoute.login)),
+            _BackButton(onTap: () => context.go(AppRoutes.login)),
             const SizedBox(height: AuthTheme.spacingLg),
 
             // ── Header ────────────────────────────────────────────────────
@@ -78,7 +78,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                   ? _SuccessView(
                       key: const ValueKey('success'),
                       email: _controller.emailController.text.trim(),
-                      onBackToLogin: () => context.go(AppRoute.login),
+                      onBackToLogin: () => context.go(AppRoutes.login),
                     )
                   : _FormView(key: const ValueKey('form'), controller: _controller, state: state),
             ),

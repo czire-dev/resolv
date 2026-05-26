@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:resolv/core/themes/app_theme.dart';
 import 'package:resolv/firebase_options.dart';
-import 'package:resolv/routing/app_route.dart' as AppRouter;
+import 'package:resolv/routing/app_router.dart' as AppRouter;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,17 +13,19 @@ void main() async {
   runApp(ProviderScope(child: const MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(AppRouter.appRouterProvider);
+
     return MaterialApp.router(
       title: 'Flutter Demo',
       theme: AppTheme.light,
       debugShowCheckedModeBanner: false,
-      routerConfig: AppRouter.router,
+      routerConfig: router,
     );
   }
 }

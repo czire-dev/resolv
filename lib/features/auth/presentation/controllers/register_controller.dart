@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:resolv/routing/app_route.dart';
+import 'package:resolv/routing/app_routes.dart';
 import '../states/auth_ui_state.dart';
 import '../utils/auth_validators.dart';
 
@@ -153,7 +153,7 @@ class RegisterController extends ChangeNotifier {
 
       _state = _state.copyWith(status: AuthStatus.success);
       notifyListeners();
-      context.go(AppRoute.login);
+      context.go(AppRoutes.login);
     } catch (e) {
       setUnexpectedError(e.toString());
     } finally {

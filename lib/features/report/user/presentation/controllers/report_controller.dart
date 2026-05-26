@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:resolv/features/report/providers/report_providers.dart';
+import 'package:resolv/features/report/providers/user_report_providers.dart' as report_providers;
 import 'package:resolv/features/report/repositories/report_repository.dart';
 import 'package:resolv/models/report_model.dart';
 
@@ -106,7 +106,7 @@ class ReportController extends ChangeNotifier {
       }
 
       final result = await ref
-          .read(reportRepositoryProvider)
+          .read(report_providers.reportRepositoryProvider)
           .submitReport(
             title: titleController.text.trim(),
             description: descriptionController.text.trim(),
@@ -118,6 +118,7 @@ class ReportController extends ChangeNotifier {
 
       if (result.isSuccess) {
         resetForm();
+        ref.invalidate(report_providers.reportControllerProvider);
       } else {
         setError(result.error?.message ?? 'Failed to submit report. Please try again.');
       }
@@ -167,13 +168,15 @@ class ReportController extends ChangeNotifier {
 }
 
 class ReportNotifier extends AsyncNotifier<List<ReportModel>?> {
-  ReportRepository get _repository => ref.read(reportRepositoryProvider);
+  ReportRepository get _repository => ref.read(report_providers.reportRepositoryProvider);
+
   @override
   FutureOr<List<ReportModel>?> build() {
     final userId = ref.watch(authControllerProvider).whenData((user) => user?.id).value;
     if (userId != null) {
       return _repository.fetchUserReports(userId: userId).then((result) {
         if (result.isSuccess) {
+          print('Fetched ${result.data?.length} reports for user $userId');
           return result.data;
         } else {
           throw Exception(result.error?.message ?? 'Failed to fetch reports');

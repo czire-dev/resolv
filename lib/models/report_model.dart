@@ -1,7 +1,68 @@
+// report/models/report_model.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 
+class AiAnalysis {
+  final String? predictedCategory;
+  final String? priority; // 'low' | 'medium' | 'high'
+  final List<String> tags;
+
+  const AiAnalysis({this.predictedCategory, this.priority, this.tags = const []});
+
+  factory AiAnalysis.fromMap(Map<String, dynamic> map) {
+    return AiAnalysis(
+      predictedCategory: map['predictedCategory'] as String?,
+      priority: map['priority'] as String?,
+      tags: List<String>.from(map['tags'] ?? []),
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'predictedCategory': predictedCategory,
+    'priority': priority,
+    'tags': tags,
+  };
+}
+
+class ReportRemark {
+  final String status;
+  final String remark;
+  final DateTime updatedAt;
+
+  const ReportRemark({required this.status, required this.remark, required this.updatedAt});
+
+  factory ReportRemark.fromMap(Map<String, dynamic> map) {
+    return ReportRemark(
+      status: map['status'] as String,
+      remark: map['remark'] as String? ?? '',
+      updatedAt: (map['updatedAt'] as Timestamp).toDate(),
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+    'status': status,
+    'remark': remark,
+    'updatedAt': Timestamp.fromDate(updatedAt),
+  };
+}
+
 class ReportModel {
+  final String id;
+  final String title;
+  final String description;
+  final ReportCategory category;
+  final ReportStatus status; // 'pending' | 'in_progress' | 'resolved'
+  final DateTime submittedAt;
+  final String submittedByName;
+  final String submittedByUid;
+  final String address;
+  final String? imageUrl;
+  final String? adminNote; // legacy single note — keep for backwards compat
+  final DateTime? updatedAt;
+  final AiAnalysis? aiAnalysis;
+  final List<ReportRemark> remarks;
+
   const ReportModel({
     required this.id,
     required this.title,
@@ -11,99 +72,43 @@ class ReportModel {
     required this.submittedAt,
     required this.submittedByName,
     required this.submittedByUid,
-    this.address,
+    required this.address,
     this.imageUrl,
     this.adminNote,
     this.updatedAt,
+    this.aiAnalysis,
+    this.remarks = const [],
   });
 
-  final String id;
-  final String title;
-  final String description;
-  final ReportCategory category;
-  final ReportStatus status;
-  final DateTime submittedAt;
-  final String submittedByName;
-  final String submittedByUid;
-  final String? address;
-  final String? imageUrl;
-  final String? adminNote;
-  final DateTime? updatedAt;
-
-  /// Convert [ReportModel] to a Firestore-compatible Map.
-  Map<String, dynamic> toFirestore() {
-    return {
-      'id': id,
-      'title': title,
-      'description': description,
-      'category': category.value,
-      'status': status.value,
-      'submittedAt': submittedAt,
-      'submittedByName': submittedByName,
-      'submittedByUid': submittedByUid,
-      'address': address,
-      'imageUrl': imageUrl,
-      'adminNote': adminNote,
-      'updatedAt': updatedAt,
-    };
-  }
-
-  /// Create [ReportModel] from a Firestore document.
-  factory ReportModel.fromFirestore(Map<String, dynamic> data, String docId) {
-    final submittedAtValue = data['submittedAt'];
-    final submittedAt = submittedAtValue is Timestamp
-        ? submittedAtValue.toDate()
-        : submittedAtValue as DateTime? ?? DateTime.now();
-
-    final updatedAtValue = data['updatedAt'];
-    final updatedAt = updatedAtValue is Timestamp
-        ? updatedAtValue.toDate()
-        : updatedAtValue as DateTime?;
-
+  factory ReportModel.fromDoc(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
     return ReportModel(
-      id: data['id'] as String? ?? docId,
-      title: data['title'] as String? ?? '',
-      description: data['description'] as String? ?? '',
-      category: ReportCategoryX.fromString(data['category'] as String? ?? 'other'),
-      status: ReportStatusX.fromString(data['status'] as String? ?? 'pending'),
-      submittedAt: submittedAt,
-      submittedByName: data['submittedByName'] as String? ?? 'Unknown',
+      id: doc.id,
+      title: data['title'] as String,
+      description: data['description'] as String,
+      category: ReportCategory.values.firstWhere(
+        (c) => c.name == data['category'],
+        orElse: () => ReportCategory.other,
+      ),
+      status: ReportStatus.values.firstWhere(
+        (s) => s.name == data['status'],
+        orElse: () => ReportStatus.pending,
+      ),
+      submittedAt: (data['submittedAt'] as Timestamp).toDate(),
+      submittedByName: data['submittedByName'] as String? ?? '',
       submittedByUid: data['submittedByUid'] as String? ?? '',
-      address: data['address'] as String?,
+      address: data['address'] as String? ?? '',
       imageUrl: data['imageUrl'] as String?,
       adminNote: data['adminNote'] as String?,
-      updatedAt: updatedAt,
-    );
-  }
-
-  /// Create a copy of this model with some fields replaced.
-  ReportModel copyWith({
-    String? id,
-    String? title,
-    String? description,
-    ReportCategory? category,
-    ReportStatus? status,
-    DateTime? submittedAt,
-    String? submittedByName,
-    String? submittedByUid,
-    String? address,
-    String? imageUrl,
-    String? adminNote,
-    DateTime? updatedAt,
-  }) {
-    return ReportModel(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      category: category ?? this.category,
-      status: status ?? this.status,
-      submittedAt: submittedAt ?? this.submittedAt,
-      submittedByName: submittedByName ?? this.submittedByName,
-      submittedByUid: submittedByUid ?? this.submittedByUid,
-      address: address ?? this.address,
-      imageUrl: imageUrl ?? this.imageUrl,
-      adminNote: adminNote ?? this.adminNote,
-      updatedAt: updatedAt ?? this.updatedAt,
+      updatedAt: data['updatedAt'] != null ? (data['updatedAt'] as Timestamp).toDate() : null,
+      aiAnalysis: data['aiAnalysis'] != null
+          ? AiAnalysis.fromMap(data['aiAnalysis'] as Map<String, dynamic>)
+          : null,
+      remarks: data['remarks'] != null
+          ? (data['remarks'] as List)
+                .map((r) => ReportRemark.fromMap(r as Map<String, dynamic>))
+                .toList()
+          : [],
     );
   }
 }

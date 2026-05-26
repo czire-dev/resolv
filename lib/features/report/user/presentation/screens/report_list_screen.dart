@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:resolv/core/enums/report_enums.dart';
-import 'package:resolv/features/report/providers/report_providers.dart';
+import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:resolv/features/report/providers/user_report_providers.dart';
 import 'package:resolv/features/report/user/presentation/widgets/report_filter.dart';
 import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
 import 'package:resolv/models/report_model.dart';
-import 'package:resolv/routing/app_route.dart';
+import 'package:resolv/routing/app_routes.dart';
 import '../widgets/report_card.dart';
 import '../widgets/report_empty_state.dart';
 
@@ -61,9 +62,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
     return reportsAsync.when(
       loading: () => Scaffold(
         backgroundColor: colors.surface,
-        body: const SafeArea(
-          child: Center(child: CircularProgressIndicator()),
-        ),
+        body: const SafeArea(child: Center(child: CircularProgressIndicator())),
       ),
       error: (error, _) => Scaffold(
         backgroundColor: colors.surface,
@@ -153,6 +152,12 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                             ),
                           ),
                         ),
+                        MaterialButton(
+                          onPressed: () {
+                            ref.read(authControllerProvider.notifier).signOut();
+                          },
+                          child: const Text('Log out'),
+                        ), // TODO: Remove this after testing
                       ],
                     ),
                   ),
@@ -175,9 +180,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                             final report = filteredReports[index];
                             return ReportCard(
                               report: report,
-                              onTap: () => context.go(
-                                AppRoute.reportDetail.replaceFirst(':id', report.id),
-                              ),
+                              onTap: () => context.go(AppRoutes.userReportPath(report.id)),
                             );
                           },
                         ),
@@ -186,14 +189,17 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
             ),
           ),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => context.go(AppRoute.createReport),
+            onPressed: () => context.go(AppRoutes.createReport),
             backgroundColor: colors.primary,
             foregroundColor: colors.onPrimary,
             elevation: 3,
             icon: const Icon(Icons.add_rounded),
             label: Text(
               'New Report',
-              style: text.labelLarge?.copyWith(color: colors.onPrimary, fontWeight: FontWeight.w700),
+              style: text.labelLarge?.copyWith(
+                color: colors.onPrimary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),

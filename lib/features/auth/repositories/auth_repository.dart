@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:resolv/core/utils/result.dart';
 import 'package:resolv/services/auth_service.dart';
@@ -11,13 +12,26 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 class AuthRepository {
   final AuthService _service;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  static const String _usersCollection = 'users';
 
   AuthRepository(this._service);
+
+  Future<UserModel> _hydrateUser(UserModel baseUser) async {
+    final doc = await _firestore.collection(_usersCollection).doc(baseUser.id).get();
+
+    if (!doc.exists || doc.data() == null) {
+      return baseUser;
+    }
+
+    return UserModel.fromFirestore(doc.data()!, doc.id);
+  }
 
   Future<Result<UserModel>> signInWithEmailAndPassword(String email, String password) async {
     final result = await _service.signInWithEmailAndPassword(email, password);
     if (result.isSuccess) {
-      return Result.success(UserModel.fromFirebase(result.data!));
+      return Result.success(await _hydrateUser(UserModel.fromFirebase(result.data!)));
     } else {
       final msg = AuthValidators.mapFirebaseError(result.error!.code ?? "");
       return Result.failure(Failure(msg, code: result.error?.code));
@@ -31,7 +45,7 @@ class AuthRepository {
   ) async {
     final result = await _service.registerWithEmailAndPassword(displayName, email, password);
     if (result.isSuccess) {
-      return Result.success(UserModel.fromFirebase(result.data!));
+      return Result.success(await _hydrateUser(UserModel.fromFirebase(result.data!)));
     } else {
       final msg = AuthValidators.mapFirebaseError(result.error!.code ?? "");
       return Result.failure(Failure(msg, code: result.error?.code));
@@ -57,7 +71,7 @@ class AuthRepository {
   Future<Result<UserModel>> getCurrentUser() async {
     final result = await _service.getCurrentUser();
     if (result.isSuccess) {
-      return Result.success(UserModel.fromFirebase(result.data!));
+      return Result.success(await _hydrateUser(UserModel.fromFirebase(result.data!)));
     } else {
       final msg = AuthValidators.mapFirebaseError(result.error!.code ?? "");
       return Result.failure(Failure(msg, code: result.error?.code));

@@ -1,0 +1,17 @@
+BUGS:
+- when admin changes the status of user's report then user tries to open 
+the report's detail; error ✅
+- when user creates new report the ui isn't fetching the updated reports 
+right away ✅
+
+FIX:
+- user creates report (success) -> view reports button no function ✅
+
+IMPROVE:
+- admin ui/ux
+
+IMPLEMENT:
+- figma design
+- ai integration
+- repeated reports -> these reports must be classified as one 
+to reduce reports' redundancy

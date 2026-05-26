@@ -10,6 +10,7 @@ class ReportService {
   static const String _reportsCollection = 'reports';
 
   /// Submit a new report to Firestore.
+  /// TODO: Integrate AI analysis for categorization and prioritization in future iterations.
   Future<Result<String>> submitReport({
     required String title,
     required String description,
@@ -52,7 +53,7 @@ class ReportService {
         return Result.failure(Failure('Report not found', code: 'not-found'));
       }
 
-      final report = ReportModel.fromFirestore(doc.data()!, doc.id);
+      final report = ReportModel.fromDoc(doc);
       return Result.success(report);
     } on FirebaseException catch (e) {
       return Result.failure(Failure(e.message ?? 'Failed to fetch report', code: e.code));
@@ -74,10 +75,7 @@ class ReportService {
 
       final reports =
           snapshot.docs
-              .map(
-                (doc) =>
-                    ReportModel.fromFirestore(Map<String, dynamic>.from(doc.data() as Map), doc.id),
-              )
+              .map((doc) => ReportModel.fromDoc(doc))
               .where((report) => status == null || report.status == status)
               .toList()
             ..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
@@ -109,9 +107,7 @@ class ReportService {
       }
 
       final snapshot = await query.get();
-      final reports = snapshot.docs
-          .map((doc) => ReportModel.fromFirestore(doc.data() as Map<String, dynamic>, doc.id))
-          .toList();
+      final reports = snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList();
 
       return Result.success(reports);
     } on FirebaseException catch (e) {
@@ -122,10 +118,15 @@ class ReportService {
   }
 
   /// Update report status (typically by admin).
-  Future<Result<void>> updateReportStatus(String reportId, ReportStatus newStatus) async {
+  Future<Result<void>> updateReportStatus(
+    String reportId,
+    ReportStatus newStatus,
+    String? adminNote,
+  ) async {
     try {
       await _firestore.collection(_reportsCollection).doc(reportId).update({
         'status': newStatus.value,
+        'adminNote': adminNote,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -179,12 +180,7 @@ class ReportService {
           .snapshots()
           .map((snapshot) {
             final reports = snapshot.docs
-                .map(
-                  (doc) => ReportModel.fromFirestore(
-                    Map<String, dynamic>.from(doc.data() as Map),
-                    doc.id,
-                  ),
-                )
+                .map((doc) => ReportModel.fromDoc(doc))
                 .where((report) => status == null || report.status == status)
                 .toList();
             reports.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
@@ -203,15 +199,46 @@ class ReportService {
     }
   }
 
+  /// one-time fetch after a cursor document
+  Future<Result<List<ReportModel>>> fetchMoreReports({
+    required DocumentSnapshot lastDocument,
+    int limit = 15,
+  }) async {
+    try {
+      final snap = await _firestore
+          .collection(_reportsCollection)
+          .orderBy('submittedAt', descending: true)
+          .startAfterDocument(lastDocument)
+          .limit(limit)
+          .get();
+
+      final reports = snap.docs.map(ReportModel.fromDoc).toList();
+      return Result.success(reports);
+    } on FirebaseException catch (e) {
+      return Result.failure(Failure(e.message ?? 'Failed to load more reports', code: e.code));
+    }
+  }
+
+  /// Get the raw DocumentSnapshot for pagination cursor
+  Future<DocumentSnapshot?> getReportDocument(String reportId) async {
+    try {
+      return await _firestore.collection('reports').doc(reportId).get();
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Stream of all reports (admin endpoint).
   Stream<Result<List<ReportModel>>> streamAllReports({
     ReportStatus? status,
     ReportCategory? category,
+    int limit = 15,
   }) {
     try {
       Query query = _firestore
           .collection(_reportsCollection)
-          .orderBy('submittedAt', descending: true);
+          .orderBy('submittedAt', descending: true)
+          .limit(limit);
 
       if (status != null) {
         query = query.where('status', isEqualTo: status.value);
@@ -224,9 +251,7 @@ class ReportService {
       return query
           .snapshots()
           .map((snapshot) {
-            final reports = snapshot.docs
-                .map((doc) => ReportModel.fromFirestore(doc.data() as Map<String, dynamic>, doc.id))
-                .toList();
+            final reports = snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList();
             return Result.success(reports);
           })
           .handleError((error) {

@@ -41,6 +41,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.13.1"
+  async_notifier:
+    dependency: "direct main"
+    description:
+      name: async_notifier
+      sha256: "8cc8a1a98fe9bb17c64a05dba1a638b55eac5d93232df64129d4fce73a53b378"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   boolean_selector:
     dependency: transitive
     description:

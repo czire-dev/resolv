@@ -24,4 +24,14 @@ class UserModel {
       profilePictureUrl: user.photoURL,
     );
   }
+
+  factory UserModel.fromFirestore(Map<String, dynamic> data, String id) {
+    return UserModel(
+      id: id,
+      displayName: data['displayName'] ?? 'User',
+      email: data['email'] ?? '',
+      profilePictureUrl: data['profilePictureUrl'],
+      role: (data['role'] as String? ?? 'user') == 'admin' ? UserRole.admin : UserRole.user,
+    );
+  }
 }

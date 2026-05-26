@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:resolv/core/utils/result.dart';
+import 'package:resolv/models/user_model.dart';
+import 'package:resolv/services/user_service.dart';
 
 class AuthService {
   final FirebaseAuth _service = FirebaseAuth.instance;
+  final UserService _userService = UserService();
 
   Future<Result<User>> signInWithEmailAndPassword(String email, String password) async {
     try {
@@ -29,6 +32,10 @@ class AuthService {
         password: password,
       );
       credential.user?.updateDisplayName(displayName);
+
+      // Create user in Firestore
+      await _userService.createUser(UserModel.fromFirebase(credential.user!));
+
       return Result.success(credential.user!);
     } on FirebaseAuthException catch (e) {
       return Result.failure(Failure(e.message ?? 'Registration failed', code: e.code));

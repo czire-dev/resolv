@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:resolv/features/report/user/presentation/controllers/report_controller.dart';
-import 'package:resolv/routing/app_route.dart';
+import 'package:resolv/routing/app_routes.dart';
 import '../widgets/report_form_fields.dart';
 
 /// Screen for composing and submitting a new barangay report.
@@ -41,7 +41,7 @@ class CreateReportScreen extends ConsumerWidget {
         scrolledUnderElevation: 1,
         shadowColor: colors.shadow.withOpacity(0.08),
         surfaceTintColor: colors.surface,
-        leading: _BackButton(onTap: onBack ?? () => context.go(AppRoute.reportList)),
+        leading: _BackButton(onTap: onBack ?? () => context.go(AppRoutes.userReports)),
         title: Text('New Report', style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
       ),
       body: GestureDetector(
@@ -322,11 +322,14 @@ class _SubmitSuccessSheet extends StatelessWidget {
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
-              child: Text(
-                'View My Reports',
-                style: text.labelLarge?.copyWith(
-                  color: colors.onPrimary,
-                  fontWeight: FontWeight.w700,
+              child: MaterialButton(
+                onPressed: onDone,
+                child: Text(
+                  'View My Reports',
+                  style: text.labelLarge?.copyWith(
+                    color: colors.onPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
