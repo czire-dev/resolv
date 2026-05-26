@@ -37,7 +37,9 @@ class ReportService {
 
       return Result.success(docRef.id);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to submit report', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to submit report', code: e.code),
+      );
     } catch (e) {
       print('Error in submitReport: $e');
       return Result.failure(Failure('An unexpected error occurred'));
@@ -47,7 +49,10 @@ class ReportService {
   /// Fetch a single report by ID.
   Future<Result<ReportModel>> fetchReportById(String reportId) async {
     try {
-      final doc = await _firestore.collection(_reportsCollection).doc(reportId).get();
+      final doc = await _firestore
+          .collection(_reportsCollection)
+          .doc(reportId)
+          .get();
 
       if (!doc.exists) {
         return Result.failure(Failure('Report not found', code: 'not-found'));
@@ -56,7 +61,9 @@ class ReportService {
       final report = ReportModel.fromDoc(doc);
       return Result.success(report);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to fetch report', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to fetch report', code: e.code),
+      );
     } catch (e) {
       return Result.failure(Failure('An unexpected error occurred'));
     }
@@ -82,7 +89,9 @@ class ReportService {
 
       return Result.success(reports);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to fetch reports', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to fetch reports', code: e.code),
+      );
     } catch (e) {
       return Result.failure(Failure('An unexpected error occurred'));
     }
@@ -107,11 +116,15 @@ class ReportService {
       }
 
       final snapshot = await query.get();
-      final reports = snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList();
+      final reports = snapshot.docs
+          .map((doc) => ReportModel.fromDoc(doc))
+          .toList();
 
       return Result.success(reports);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to fetch reports', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to fetch reports', code: e.code),
+      );
     } catch (e) {
       return Result.failure(Failure('An unexpected error occurred'));
     }
@@ -132,7 +145,29 @@ class ReportService {
 
       return Result.success(null);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to update report status', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to update report status', code: e.code),
+      );
+    } catch (e) {
+      return Result.failure(Failure('An unexpected error occurred'));
+    }
+  }
+
+  /// Update report with arbitrary data (used by AI workflow).
+  Future<Result<void>> updateReport(
+    String reportId,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      await _firestore
+          .collection(_reportsCollection)
+          .doc(reportId)
+          .update(data);
+      return Result.success(null);
+    } on FirebaseException catch (e) {
+      return Result.failure(
+        Failure(e.message ?? 'Failed to update report', code: e.code),
+      );
     } catch (e) {
       return Result.failure(Failure('An unexpected error occurred'));
     }
@@ -148,7 +183,9 @@ class ReportService {
 
       return Result.success(null);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to add admin note', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to add admin note', code: e.code),
+      );
     } catch (e) {
       return Result.failure(Failure('An unexpected error occurred'));
     }
@@ -160,7 +197,9 @@ class ReportService {
       await _firestore.collection(_reportsCollection).doc(reportId).delete();
       return Result.success(null);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to delete report', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to delete report', code: e.code),
+      );
     } catch (e) {
       return Result.failure(Failure('An unexpected error occurred'));
     }
@@ -189,13 +228,18 @@ class ReportService {
           .handleError((error) {
             if (error is FirebaseException) {
               return Result.failure(
-                Failure(error.message ?? 'Failed to stream reports', code: error.code),
+                Failure(
+                  error.message ?? 'Failed to stream reports',
+                  code: error.code,
+                ),
               );
             }
             return Result.failure(Failure('An unexpected error occurred'));
           });
     } catch (e) {
-      return Stream.value(Result.failure(Failure('An unexpected error occurred')));
+      return Stream.value(
+        Result.failure(Failure('An unexpected error occurred')),
+      );
     }
   }
 
@@ -215,7 +259,9 @@ class ReportService {
       final reports = snap.docs.map(ReportModel.fromDoc).toList();
       return Result.success(reports);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to load more reports', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to load more reports', code: e.code),
+      );
     }
   }
 
@@ -251,19 +297,26 @@ class ReportService {
       return query
           .snapshots()
           .map((snapshot) {
-            final reports = snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList();
+            final reports = snapshot.docs
+                .map((doc) => ReportModel.fromDoc(doc))
+                .toList();
             return Result.success(reports);
           })
           .handleError((error) {
             if (error is FirebaseException) {
               return Result.failure(
-                Failure(error.message ?? 'Failed to stream reports', code: error.code),
+                Failure(
+                  error.message ?? 'Failed to stream reports',
+                  code: error.code,
+                ),
               );
             }
             return Result.failure(Failure('An unexpected error occurred'));
           });
     } catch (e) {
-      return Stream.value(Result.failure(Failure('An unexpected error occurred')));
+      return Stream.value(
+        Result.failure(Failure('An unexpected error occurred')),
+      );
     }
   }
 }

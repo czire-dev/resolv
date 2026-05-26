@@ -1,38 +1,9 @@
-/// Mock data and lightweight UI model for the Reports feature.
-/// Replace with real Riverpod providers once the backend layer is wired.
+/// Mock data for the Reports feature.
+/// Used for testing and examples only.
 library;
 
 import 'package:resolv/core/enums/report_enums.dart';
-
-// ── UI Model ──────────────────────────────────────────────────────────────────
-
-class ReportUiModel {
-  const ReportUiModel({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.category,
-    required this.status,
-    required this.submittedAt,
-    required this.submittedByName,
-    this.address,
-    this.imageUrl,
-    this.adminNote,
-    this.updatedAt,
-  });
-
-  final String id;
-  final String title;
-  final String description;
-  final ReportCategory category;
-  final ReportStatus status;
-  final DateTime submittedAt;
-  final String submittedByName;
-  final String? address;
-  final String? imageUrl;
-  final String? adminNote;
-  final DateTime? updatedAt;
-}
+import 'package:resolv/models/report_ui_model.dart';
 
 // ── Mock Data ─────────────────────────────────────────────────────────────────
 

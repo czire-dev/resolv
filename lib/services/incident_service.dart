@@ -1,34 +1,148 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:resolv/core/utils/result.dart';
 import 'package:resolv/models/incident_model.dart';
+import 'package:resolv/core/enums/report_enums.dart';
+import 'package:resolv/core/enums/incident_enums.dart';
 
 class IncidentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static const String _incidentsCollection = 'incidents';
 
   // create
-  Future<Result<IncidentModel>> createIncident(Map<String, dynamic> incidentData) async {
+  Future<Result<IncidentModel>> createIncident(
+    Map<String, dynamic> incidentData,
+  ) async {
     try {
-      final docRef = await _firestore.collection(_incidentsCollection).add(incidentData);
+      final docRef = await _firestore
+          .collection(_incidentsCollection)
+          .add(incidentData);
 
       final doc = await docRef.get();
 
       final incident = IncidentModel.fromDoc(doc);
       return Result.success(incident);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to create incident', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to create incident', code: e.code),
+      );
+    } catch (e) {
+      return Result.failure(Failure('An unexpected error occurred'));
+    }
+  }
+
+  // read single
+  Future<Result<IncidentModel>> getIncidentById(String incidentId) async {
+    try {
+      final doc = await _firestore
+          .collection(_incidentsCollection)
+          .doc(incidentId)
+          .get();
+      if (!doc.exists) {
+        return Result.failure(Failure('Incident not found'));
+      }
+      return Result.success(IncidentModel.fromDoc(doc));
+    } on FirebaseException catch (e) {
+      return Result.failure(
+        Failure(e.message ?? 'Failed to fetch incident', code: e.code),
+      );
+    } catch (e) {
+      return Result.failure(Failure('An unexpected error occurred'));
+    }
+  }
+
+  // read all
+  Future<Result<List<IncidentModel>>> getAllIncidents() async {
+    try {
+      final snapshot = await _firestore
+          .collection(_incidentsCollection)
+          .orderBy('updatedAt', descending: true)
+          .get();
+
+      final incidents = snapshot.docs
+          .map((doc) => IncidentModel.fromDoc(doc))
+          .toList();
+      return Result.success(incidents);
+    } on FirebaseException catch (e) {
+      return Result.failure(
+        Failure(e.message ?? 'Failed to fetch incidents', code: e.code),
+      );
+    } catch (e) {
+      return Result.failure(Failure('An unexpected error occurred'));
+    }
+  }
+
+  // stream all incidents (real-time)
+  Stream<Result<List<IncidentModel>>> streamAllIncidents() {
+    try {
+      return _firestore
+          .collection(_incidentsCollection)
+          .orderBy('updatedAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+            final incidents = snapshot.docs
+                .map((doc) => IncidentModel.fromDoc(doc))
+                .toList();
+            return Result.success(incidents);
+          })
+          .handleError((e) {
+            if (e is FirebaseException) {
+              return Result.failure(
+                Failure(e.message ?? 'Stream failed', code: e.code),
+              );
+            }
+            return Result.failure(Failure('An unexpected error occurred'));
+          });
+    } catch (e) {
+      return Stream.value(
+        Result.failure(Failure('Failed to initialize stream')),
+      );
+    }
+  }
+
+  // read filtered
+  Future<Result<List<IncidentModel>>> getIncidentsFiltered({
+    ReportCategory? category,
+    IncidentPriority? priority,
+  }) async {
+    try {
+      Query query = _firestore.collection(_incidentsCollection);
+
+      if (category != null) {
+        query = query.where('category', isEqualTo: category.name);
+      }
+      if (priority != null) {
+        query = query.where('priority', isEqualTo: priority.name);
+      }
+
+      final snapshot = await query.orderBy('updatedAt', descending: true).get();
+      final incidents = snapshot.docs
+          .map((doc) => IncidentModel.fromDoc(doc))
+          .toList();
+      return Result.success(incidents);
+    } on FirebaseException catch (e) {
+      return Result.failure(
+        Failure(e.message ?? 'Failed to fetch incidents', code: e.code),
+      );
     } catch (e) {
       return Result.failure(Failure('An unexpected error occurred'));
     }
   }
 
   // update
-  Future<Result<void>> updateIncident(String incidentId, Map<String, dynamic> updatedData) async {
+  Future<Result<void>> updateIncident(
+    String incidentId,
+    Map<String, dynamic> updatedData,
+  ) async {
     try {
-      await _firestore.collection(_incidentsCollection).doc(incidentId).update(updatedData);
+      await _firestore
+          .collection(_incidentsCollection)
+          .doc(incidentId)
+          .update(updatedData);
       return Result.success(null);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to update incident', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to update incident', code: e.code),
+      );
     } catch (e) {
       return Result.failure(Failure('An unexpected error occurred'));
     }
@@ -37,10 +151,15 @@ class IncidentService {
   // delete
   Future<Result<void>> deleteIncident(String incidentId) async {
     try {
-      await _firestore.collection(_incidentsCollection).doc(incidentId).delete();
+      await _firestore
+          .collection(_incidentsCollection)
+          .doc(incidentId)
+          .delete();
       return Result.success(null);
     } on FirebaseException catch (e) {
-      return Result.failure(Failure(e.message ?? 'Failed to delete incident', code: e.code));
+      return Result.failure(
+        Failure(e.message ?? 'Failed to delete incident', code: e.code),
+      );
     } catch (e) {
       return Result.failure(Failure('An unexpected error occurred'));
     }

@@ -7,6 +7,7 @@ import 'package:resolv/features/report/providers/user_report_providers.dart';
 import 'package:resolv/features/report/user/presentation/widgets/report_filter.dart';
 import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
 import 'package:resolv/models/report_model.dart';
+import 'package:resolv/models/report_ui_model.dart';
 import 'package:resolv/routing/app_routes.dart';
 import '../widgets/report_card.dart';
 import '../widgets/report_empty_state.dart';
@@ -15,7 +16,11 @@ import '../widgets/report_empty_state.dart';
 /// Supports status filtering via [ReportFilterBar].
 /// TODO: Connect [onNavigateToCreate] and [onNavigateToDetail] to GoRouter.
 class ReportListScreen extends ConsumerStatefulWidget {
-  const ReportListScreen({super.key, this.onNavigateToCreate, this.onNavigateToDetail});
+  const ReportListScreen({
+    super.key,
+    this.onNavigateToCreate,
+    this.onNavigateToDetail,
+  });
 
   final VoidCallback? onNavigateToCreate;
   final ValueChanged<ReportUiModel>? onNavigateToDetail;
@@ -72,7 +77,9 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
               child: Text(
                 'Failed to load reports: $error',
                 textAlign: TextAlign.center,
-                style: text.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
+                style: text.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
               ),
             ),
           ),
@@ -95,9 +102,15 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                   scrolledUnderElevation: 1,
                   shadowColor: colors.shadow.withOpacity(0.08),
                   surfaceTintColor: colors.surface,
+                  leading: IconButton(
+                    onPressed: () => context.go(AppRoutes.userHome),
+                    icon: Icon(Icons.arrow_back, color: colors.onSurface),
+                  ),
                   title: Text(
                     'My Reports',
-                    style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                    style: text.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   actions: [
                     _StatsSummaryBadge(reports: uiReports),
@@ -130,7 +143,9 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                     child: Row(
                       children: [
                         Text(
-                          _activeFilter == null ? 'All Reports' : '${_activeFilter!.label} Reports',
+                          _activeFilter == null
+                              ? 'All Reports'
+                              : '${_activeFilter!.label} Reports',
                           style: text.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: colors.onSurface,
@@ -138,7 +153,10 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: colors.primaryContainer,
                             borderRadius: BorderRadius.circular(20),
@@ -167,19 +185,23 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                     ? SliverFillRemaining(
                         child: ReportEmptyState(
                           title: 'No ${_activeFilter?.label ?? ''} reports',
-                          subtitle: 'Try selecting a different filter or submit a new report.',
+                          subtitle:
+                              'Try selecting a different filter or submit a new report.',
                         ),
                       )
                     : SliverPadding(
                         padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
                         sliver: SliverList.separated(
                           itemCount: filteredReports.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final report = filteredReports[index];
                             return ReportCard(
                               report: report,
-                              onTap: () => context.go(AppRoutes.userReportPath(report.id)),
+                              onTap: () => context.go(
+                                AppRoutes.userReportPath(report.id),
+                              ),
                             );
                           },
                         ),
@@ -188,7 +210,7 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
             ),
           ),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => context.go(AppRoutes.createReport),
+            onPressed: () => context.go(AppRoutes.userHome),
             backgroundColor: colors.primary,
             foregroundColor: colors.onPrimary,
             elevation: 3,
@@ -200,7 +222,9 @@ class _ReportListScreenState extends ConsumerState<ReportListScreen> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
         );
       },
@@ -218,7 +242,11 @@ class _StatsSummaryBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pendingCount = reports
-        .where((r) => r.status == ReportStatus.pending || r.status == ReportStatus.inProgress)
+        .where(
+          (r) =>
+              r.status == ReportStatus.pending ||
+              r.status == ReportStatus.inProgress,
+        )
         .length;
 
     if (pendingCount == 0) return const SizedBox.shrink();
@@ -232,7 +260,11 @@ class _StatsSummaryBadge extends StatelessWidget {
       ),
       child: Text(
         '$pendingCount active',
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF854D0E)),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF854D0E),
+        ),
       ),
     );
   }
@@ -247,9 +279,15 @@ class _UserStatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pending = reports.where((r) => r.status == ReportStatus.pending).length;
-    final inProgress = reports.where((r) => r.status == ReportStatus.inProgress).length;
-    final resolved = reports.where((r) => r.status == ReportStatus.resolved).length;
+    final pending = reports
+        .where((r) => r.status == ReportStatus.pending)
+        .length;
+    final inProgress = reports
+        .where((r) => r.status == ReportStatus.inProgress)
+        .length;
+    final resolved = reports
+        .where((r) => r.status == ReportStatus.resolved)
+        .length;
 
     return Row(
       children: [
@@ -259,7 +297,11 @@ class _UserStatsRow extends StatelessWidget {
           color: Theme.of(context).colorScheme.onSurface,
         ),
         const SizedBox(width: 10),
-        _StatTile(count: pending, label: 'Pending', color: const Color(0xFFCA8A04)),
+        _StatTile(
+          count: pending,
+          label: 'Pending',
+          color: const Color(0xFFCA8A04),
+        ),
         const SizedBox(width: 10),
         _StatTile(
           count: inProgress,
@@ -267,14 +309,22 @@ class _UserStatsRow extends StatelessWidget {
           color: Theme.of(context).colorScheme.tertiary,
         ),
         const SizedBox(width: 10),
-        _StatTile(count: resolved, label: 'Resolved', color: Theme.of(context).colorScheme.primary),
+        _StatTile(
+          count: resolved,
+          label: 'Resolved',
+          color: Theme.of(context).colorScheme.primary,
+        ),
       ],
     );
   }
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.count, required this.label, required this.color});
+  const _StatTile({
+    required this.count,
+    required this.label,
+    required this.color,
+  });
 
   final int count;
   final String label;
@@ -306,7 +356,10 @@ class _StatTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: text.labelSmall?.copyWith(color: colors.onSurfaceVariant, fontSize: 10),
+              style: text.labelSmall?.copyWith(
+                color: colors.onSurfaceVariant,
+                fontSize: 10,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

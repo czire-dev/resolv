@@ -6,8 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:resolv/core/utils/result.dart';
 import 'package:resolv/core/enums/user_role.dart';
 import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:resolv/features/report/admin/screens/admin_dashboard_screen.dart';
 import 'package:resolv/features/report/admin/screens/admin_report_detail_screen.dart';
-import 'package:resolv/features/report/admin/screens/admin_report_list_screen.dart';
+import 'package:resolv/features/report/admin/screens/admin_incident_detail_screen.dart'
+    hide AdminReportDetailScreen;
+import 'package:resolv/features/report/providers/incident_providers.dart';
+import 'package:resolv/features/report/user/presentation/screens/home_screen.dart';
 import '../features/report/providers/user_report_providers.dart';
 import 'package:resolv/features/report/user/presentation/screens/create_report_screen.dart';
 import 'package:resolv/features/report/user/presentation/screens/report_detail_screen.dart';
@@ -17,6 +21,9 @@ import 'package:resolv/features/auth/presentation/screens/register_screen.dart';
 import 'package:resolv/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
 import 'package:resolv/models/report_model.dart';
+import 'package:resolv/models/report_ui_model.dart';
+import 'package:resolv/models/incident_model.dart';
+import 'package:resolv/features/report/repositories/incident_repository.dart';
 import 'package:resolv/routing/app_routes.dart';
 import 'package:resolv/routing/router_notifier.dart';
 
@@ -67,7 +74,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── 4. Role guard: residents cannot access /admin/* ──
       if (isAuthenticated && isOnAdminRoute && user.role != UserRole.admin) {
         // Resident trying to access admin → send them to their own home
-        return AppRoutes.userReports;
+        return AppRoutes.userHome;
       }
 
       // ── 5. Role guard: admins landing on /user/* ──────────
@@ -83,14 +90,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
     routes: [
       // ── Auth routes (unauthenticated) ──────────────────
-      GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginScreen()),
-      GoRoute(path: AppRoutes.register, builder: (context, state) => const RegisterScreen()),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.register,
+        builder: (context, state) => const RegisterScreen(),
+      ),
       GoRoute(
         path: AppRoutes.forgotPassword,
         builder: (context, state) => const ForgotPasswordScreen(),
       ),
 
       // ── Resident routes ────────────────────────────────
+      GoRoute(
+        path: AppRoutes.userHome,
+        builder: (context, state) => const HomeScreen(),
+      ),
       GoRoute(
         path: AppRoutes.userReports,
         builder: (context, state) => const ReportListScreen(),
@@ -104,22 +121,32 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
               if (report != null) return ReportDetailScreen(report: report);
 
-              final future = ref.read(reportRepositoryProvider).fetchReportById(reportId);
+              final future = ref
+                  .read(reportRepositoryProvider)
+                  .fetchReportById(reportId);
 
               return FutureBuilder<Result<ReportModel>>(
                 future: future,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
                     return const Scaffold(
-                      body: SafeArea(child: Center(child: CircularProgressIndicator())),
+                      body: SafeArea(
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
                     );
                   }
 
                   final result = snapshot.data;
-                  if (result == null || result.isFailure || result.data == null) {
+                  if (result == null ||
+                      result.isFailure ||
+                      result.data == null) {
                     return Scaffold(
                       body: SafeArea(
-                        child: Center(child: Text(result?.error?.message ?? 'Report not found')),
+                        child: Center(
+                          child: Text(
+                            result?.error?.message ?? 'Report not found',
+                          ),
+                        ),
                       ),
                     );
                   }
@@ -147,14 +174,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.createReport,
-        builder: (context, state) =>
-            CreateReportScreen(onSubmitSuccess: () => {context.go(AppRoutes.userReports)}),
+        builder: (context, state) => CreateReportScreen(
+          onSubmitSuccess: () => {context.go(AppRoutes.userReports)},
+        ),
       ),
 
       // ── Admin routes ───────────────────────────────────
       GoRoute(
         path: AppRoutes.adminReports,
-        builder: (context, state) => const AdminReportListScreen(),
+        // builder: (context, state) => const AdminReportListScreen(),
+        builder: (context, state) => const AdminDashboardScreen(),
         routes: [
           GoRoute(
             // Full path: /admin/reports/:reportId
@@ -165,6 +194,66 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               // required auth, so we can safely require extra here for MVP.
               final report = state.extra as ReportModel;
               return AdminReportDetailScreen(report: report);
+            },
+          ),
+        ],
+      ),
+
+      // ── Admin Incident routes ───────────────────────────
+      GoRoute(
+        path: AppRoutes.adminIncidents,
+        builder: (context, state) => const Scaffold(
+          body: SafeArea(
+            child: Center(child: Text('Incident List - Coming Soon')),
+          ),
+        ),
+        routes: [
+          GoRoute(
+            // Full path: /admin/incidents/:incidentId
+            path: ':incidentId',
+            builder: (context, state) {
+              final incidentId = state.pathParameters['incidentId']!;
+              final incident = state.extra as IncidentModel?;
+
+              if (incident != null) {
+                return AdminIncidentDetailScreen(incidentId: incidentId);
+              }
+
+              // If not passed via extra, fetch from Firestore
+              final future = ref
+                  .read(incidentRepositoryProvider)
+                  .fetchIncidentById(incidentId);
+
+              return FutureBuilder<Result<IncidentModel?>>(
+                future: future,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Scaffold(
+                      body: SafeArea(
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                    );
+                  }
+
+                  final result = snapshot.data;
+                  if (result == null ||
+                      result.isFailure ||
+                      result.data == null) {
+                    return Scaffold(
+                      body: SafeArea(
+                        child: Center(
+                          child: Text(
+                            result?.error?.message ?? 'Incident not found',
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+
+                  final fetchedIncident = result.data!;
+                  return AdminIncidentDetailScreen(incidentId: incidentId);
+                },
+              );
             },
           ),
         ],

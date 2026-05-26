@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
+import 'package:resolv/models/report_ui_model.dart';
 import 'package:resolv/routing/app_routes.dart';
 import '../widgets/status_badge.dart';
 
@@ -33,7 +34,9 @@ class ReportDetailScreen extends StatelessWidget {
             scrolledUnderElevation: 1,
             shadowColor: colors.shadow.withOpacity(0.08),
             surfaceTintColor: colors.surface,
-            leading: _BackButton(onTap: onBack ?? () => context.go(AppRoutes.userReports)),
+            leading: _BackButton(
+              onTap: onBack ?? () => context.go(AppRoutes.userReports),
+            ),
             title: Text(
               report.id,
               style: text.titleMedium?.copyWith(
@@ -45,7 +48,10 @@ class ReportDetailScreen extends StatelessWidget {
             actions: [
               Padding(
                 padding: const EdgeInsets.only(right: 16),
-                child: StatusBadge(status: report.status, size: StatusBadgeSize.medium),
+                child: StatusBadge(
+                  status: report.status,
+                  size: StatusBadgeSize.medium,
+                ),
               ),
             ],
           ),
@@ -132,7 +138,11 @@ class ReportDetailScreen extends StatelessWidget {
 // ── Section Card ──────────────────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.icon, required this.child});
+  const _SectionCard({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
 
   final String title;
   final IconData icon;
@@ -149,7 +159,10 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.outlineVariant.withOpacity(0.5), width: 1),
+        border: Border.all(
+          color: colors.outlineVariant.withOpacity(0.5),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +213,11 @@ class _AdminNoteCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.admin_panel_settings_outlined, size: 15, color: colors.secondary),
+              Icon(
+                Icons.admin_panel_settings_outlined,
+                size: 15,
+                color: colors.secondary,
+              ),
               const SizedBox(width: 6),
               Text(
                 'Barangay Response',
@@ -215,7 +232,10 @@ class _AdminNoteCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             note,
-            style: text.bodyMedium?.copyWith(color: colors.onSecondaryContainer, height: 1.55),
+            style: text.bodyMedium?.copyWith(
+              color: colors.onSecondaryContainer,
+              height: 1.55,
+            ),
           ),
         ],
       ),
@@ -271,15 +291,23 @@ class _MetaRow extends StatelessWidget {
     final text = Theme.of(context).textTheme;
 
     final dt = report.submittedAt;
-    final formatted = '${dt.day}/${dt.month}/${dt.year} at ${_pad(dt.hour)}:${_pad(dt.minute)}';
+    final formatted =
+        '${dt.day}/${dt.month}/${dt.year} at ${_pad(dt.hour)}:${_pad(dt.minute)}';
 
     return Row(
       children: [
-        Icon(Icons.access_time_rounded, size: 13, color: colors.onSurfaceVariant),
+        Icon(
+          Icons.access_time_rounded,
+          size: 13,
+          color: colors.onSurfaceVariant,
+        ),
         const SizedBox(width: 4),
         Text(
           'Submitted $formatted',
-          style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant, fontSize: 12),
+          style: text.bodySmall?.copyWith(
+            color: colors.onSurfaceVariant,
+            fontSize: 12,
+          ),
         ),
       ],
     );
@@ -333,7 +361,9 @@ class _StatusTimeline extends StatelessWidget {
       _TimelineStepData(
         label: 'Resolved',
         subtitle: report.status == ReportStatus.resolved
-            ? (report.updatedAt != null ? _formatDt(report.updatedAt!) : 'Completed')
+            ? (report.updatedAt != null
+                  ? _formatDt(report.updatedAt!)
+                  : 'Completed')
             : 'Pending resolution',
         isCompleted: report.status == ReportStatus.resolved,
         isCurrent: false,
@@ -434,7 +464,8 @@ class _TimelineStep extends StatelessWidget {
                     step.label,
                     style: text.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: step.isCompleted || step.isCurrent || step.isRejected
+                      color:
+                          step.isCompleted || step.isCurrent || step.isRejected
                           ? colors.onSurface
                           : colors.onSurfaceVariant.withOpacity(0.5),
                     ),
@@ -442,7 +473,9 @@ class _TimelineStep extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     step.subtitle,
-                    style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                    style: text.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -473,7 +506,11 @@ class _BackButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: colors.outlineVariant),
         ),
-        child: Icon(Icons.arrow_back_rounded, color: colors.onSurface, size: 20),
+        child: Icon(
+          Icons.arrow_back_rounded,
+          color: colors.onSurface,
+          size: 20,
+        ),
       ),
     );
   }

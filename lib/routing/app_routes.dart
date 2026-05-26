@@ -10,18 +10,22 @@ import 'package:resolv/core/enums/user_role.dart';
 /// Build full paths with named helpers below.
 abstract final class AppRoutes {
   // ── Auth ──────────────────────────────────────────────
-  static const String login          = '/auth/login';
-  static const String register       = '/auth/register';
+  static const String login = '/auth/login';
+  static const String register = '/auth/register';
   static const String forgotPassword = '/auth/forgot-password';
 
   // ── Resident ──────────────────────────────────────────
-  static const String userReports       = '/user/reports';
-  static const String userReportDetail  = '/user/reports/:id';
-  static const String createReport      = '/user/create-report';
+  static const String userReports = '/user/reports';
+  static const String userReportDetail = '/user/reports/:id';
+  static const String createReport = '/user/create-report';
+  static const String userHome = '/home';
 
   // ── Admin ─────────────────────────────────────────────
-  static const String adminReports      = '/admin/reports';
+  static const String adminReports = '/admin/reports';
   static const String adminReportDetail = '/admin/reports/:reportId';
+  static const String adminIncidents = '/admin/incidents';
+  static String adminIncidentDetail(String incidentId) =>
+      '/admin/incidents/$incidentId';
 
   // ── Helpers: build concrete paths with parameters ─────
 
@@ -37,8 +41,8 @@ abstract final class AppRoutes {
   /// Used by redirect logic — single source of truth.
   static String homeForRole(UserRole role) {
     return switch (role) {
-      UserRole.admin    => adminReports,
-      UserRole.user => userReports,
+      UserRole.admin => adminReports,
+      UserRole.user => userHome,
     };
   }
 }
