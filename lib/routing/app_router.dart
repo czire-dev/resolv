@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:resolv/core/utils/result.dart';
 import 'package:resolv/core/enums/user_role.dart';
 import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:resolv/features/profile/presentation/screens/profile_screen.dart';
 import 'package:resolv/features/report/admin/screens/admin_dashboard_screen.dart';
 import 'package:resolv/features/report/admin/screens/admin_report_detail_screen.dart';
 import 'package:resolv/features/report/admin/screens/admin_incident_detail_screen.dart'
@@ -101,6 +102,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.forgotPassword,
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (context, state) => const ProfileScreen(),
       ),
 
       // ── Resident routes ────────────────────────────────

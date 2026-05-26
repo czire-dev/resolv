@@ -13,6 +13,7 @@ abstract final class AppRoutes {
   static const String login = '/auth/login';
   static const String register = '/auth/register';
   static const String forgotPassword = '/auth/forgot-password';
+  static const String profile = '/profile';
 
   // ── Resident ──────────────────────────────────────────
   static const String userReports = '/user/reports';
@@ -24,6 +25,7 @@ abstract final class AppRoutes {
   static const String adminReports = '/admin/reports';
   static const String adminReportDetail = '/admin/reports/:reportId';
   static const String adminIncidents = '/admin/incidents';
+
   static String adminIncidentDetail(String incidentId) =>
       '/admin/incidents/$incidentId';
 

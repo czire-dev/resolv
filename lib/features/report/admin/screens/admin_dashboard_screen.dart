@@ -5,7 +5,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:resolv/core/themes/ui_constants.dart';
-import 'package:resolv/routing/app_routes.dart';
 import 'package:resolv/shared/widgets/cards.dart';
 import 'package:resolv/shared/widgets/layouts.dart';
 
@@ -228,7 +227,7 @@ class _AdminHeader extends StatelessWidget {
           const SizedBox(width: Sp.sm),
           IconButton(
             onPressed: () {
-              context.go('/admin/profile');
+              context.go('/profile');
             },
             icon: CircleAvatar(
               radius: 18,
