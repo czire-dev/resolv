@@ -13,6 +13,7 @@ class IncidentService {
     Map<String, dynamic> incidentData,
   ) async {
     try {
+      print('[Incident] Creating incident with keys: ${incidentData.keys.toList()}');
       final docRef = await _firestore
           .collection(_incidentsCollection)
           .add(incidentData);
@@ -134,6 +135,7 @@ class IncidentService {
     Map<String, dynamic> updatedData,
   ) async {
     try {
+      print('[Incident] Updating $incidentId with keys: ${updatedData.keys.toList()}');
       await _firestore
           .collection(_incidentsCollection)
           .doc(incidentId)

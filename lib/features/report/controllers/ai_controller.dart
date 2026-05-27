@@ -229,7 +229,6 @@ class AiController {
   }) async {
     try {
       print('[AI] Attaching report $reportId to incident $incidentId (isDuplicate=$isDuplicate)');
-
       // Update report with incident reference and AI analysis
       final reportUpdateResult = await _reportService.updateReport(reportId, {
         'incidentId': incidentId,
@@ -243,12 +242,47 @@ class AiController {
         return Result.failure(reportUpdateResult.error!);
       }
 
-      // Update incident: increment reportCount and add reportId
-      await _firestore.collection(_incidentsCollection).doc(incidentId).update({
-        'reportIds': FieldValue.arrayUnion([reportId]),
-        'reportCount': FieldValue.increment(1),
-        'lastReportAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
+      // Use a transaction to ensure idempotent addition of reportId and safe reportCount updates.
+      final incidentRef = _firestore.collection(_incidentsCollection).doc(incidentId);
+
+      await _firestore.runTransaction((tx) async {
+        final snapshot = await tx.get(incidentRef);
+        if (!snapshot.exists) {
+          throw Exception('Incident $incidentId does not exist');
+        }
+
+        final data = snapshot.data() as Map<String, dynamic>;
+        final existingIds = <String>[...((data['reportIds'] as List?)?.map((e) => e.toString()) ?? [])];
+        final existingCount = (data['reportCount'] is int) ? data['reportCount'] as int : existingIds.length;
+
+        // If reportId already present, do not increment. Ensure reportCount matches actual list length.
+        if (existingIds.contains(reportId)) {
+          final actualCount = existingIds.length;
+          if (existingCount != actualCount) {
+            tx.update(incidentRef, {
+              'reportCount': actualCount,
+              'lastReportAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+            print('[AI] Incident $incidentId had mismatched count. Corrected to $actualCount');
+          } else {
+            // Touch timestamps to surface recent change
+            tx.update(incidentRef, {
+              'lastReportAt': FieldValue.serverTimestamp(),
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+            print('[AI] Report $reportId already present on incident $incidentId — no increment performed');
+          }
+        } else {
+          // Add report id and increment count atomically
+          tx.update(incidentRef, {
+            'reportIds': FieldValue.arrayUnion([reportId]),
+            'reportCount': FieldValue.increment(1),
+            'lastReportAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          print('[AI] Report $reportId added to incident $incidentId and reportCount incremented');
+        }
       });
 
       print('[AI] Report successfully attached to incident');

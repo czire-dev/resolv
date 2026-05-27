@@ -32,18 +32,21 @@ final incidentStreamProvider = StreamProvider<List<IncidentModel>>((
 });
 
 /// Recent incidents (first N, sorted by updatedAt descending).
-final recentIncidentsProvider = FutureProvider<List<IncidentModel>>((
+/// Switched to a StreamProvider so recent incidents are truly real-time.
+final recentIncidentsProvider = StreamProvider<List<IncidentModel>>((
   ref,
-) async {
-  final result = await ref
-      .watch(incidentRepositoryProvider)
-      .fetchAllIncidents();
-  if (result.isSuccess) {
-    final incidents = result.data ?? [];
-    // Return top 5 most recent
-    return incidents.take(5).toList();
-  }
-  return [];
+) {
+  final stream = ref.watch(incidentRepositoryProvider).streamAllIncidents();
+  return stream.map((result) {
+    if (result.isSuccess) {
+      final incidents = result.data ?? [];
+      // Debug: log stream emissions for recent incidents
+      // ignore: avoid_print
+      print('[Stream][Incidents] recentIncidents emitted ${incidents.length} items');
+      return incidents.take(5).toList();
+    }
+    return <IncidentModel>[];
+  });
 });
 
 /// Filtered incidents (by category/priority).

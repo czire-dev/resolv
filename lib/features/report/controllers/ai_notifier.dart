@@ -56,6 +56,18 @@ class AiNotifier extends AsyncNotifier<AiAnalysisState?> {
           confidence: workflow.confidence,
         ),
       );
+
+      // Invalidate relevant stream providers to force immediate UI updates
+      try {
+        print('[AiNotifier] Invalidating stream providers for immediate refresh');
+        ref.invalidate(reportsStreamProvider);
+        ref.invalidate(duplicateReportsStreamProvider);
+        ref.invalidate(openIncidentsStreamProvider);
+        // Invalidate the generic incidents family instance used by admin (null filters)
+        ref.invalidate(incidentsStreamProvider((category: null, status: null)));
+      } catch (e) {
+        print('[AiNotifier] Provider invalidation error: $e');
+      }
     } else {
       print('[AiNotifier] Analysis failed: ${result.error!.message}');
       state = AsyncValue.error(result.error!.message, StackTrace.current);

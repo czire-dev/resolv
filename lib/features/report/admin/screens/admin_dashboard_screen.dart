@@ -310,6 +310,12 @@ class _KpiSection extends StatelessWidget {
     final duplicateReports =
       _data(duplicateReportsAsync) ?? const <ReportModel>[];
 
+    // Corrected AI grouped metric: count reports that have been linked to an incident
+    final groupedReportsCount = (reports
+            .where((r) => r.incidentId.trim().isNotEmpty)
+            .length)
+        ;
+
     final pendingReports =
         reports.where((r) => r.status.name == 'pending').length;
     final highPriority = reports
@@ -356,7 +362,7 @@ class _KpiSection extends StatelessWidget {
               ),
               DashboardMetricCard(
                 label: 'AI Grouped',
-                value: '${duplicateReports.length}',
+                value: '$groupedReportsCount',
                 icon: Icons.auto_awesome_rounded,
                 color: const Color(0xFF8B5CF6),
                 bgColor: const Color(0xFFEDE9FE),

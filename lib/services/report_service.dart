@@ -145,6 +145,7 @@ class ReportService {
   /// Update report with arbitrary data (used by AI workflow).
   Future<Result<void>> updateReport(String reportId, Map<String, dynamic> data) async {
     try {
+      print('[Report] Updating report $reportId with keys: ${data.keys.toList()}');
       await _firestore.collection(_reportsCollection).doc(reportId).update(data);
       return Result.success(null);
     } on FirebaseException catch (e) {

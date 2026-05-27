@@ -245,8 +245,10 @@ class _IncidentHeroHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Reduce fixed top padding and make layout flexible to avoid overflow in small heights
+    final topPad = 40.0;
     return Container(
-      padding: const EdgeInsets.fromLTRB(Sp.base, 56, Sp.base, Sp.base),
+      padding: EdgeInsets.fromLTRB(Sp.base, topPad, Sp.base, Sp.base),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         border: Border(
@@ -255,7 +257,7 @@ class _IncidentHeroHeader extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
@@ -267,13 +269,16 @@ class _IncidentHeroHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: Sp.sm),
-          Text(
-            incident.title,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
+          // Make the title flexible so it can shrink inside small FlexibleSpaceBar heights
+          Flexible(
+            child: Text(
+              incident.title,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: Sp.xs),
           StatusBadge(status: _statusLabel(incident.status), compact: true),
