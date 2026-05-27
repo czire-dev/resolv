@@ -34,10 +34,7 @@ class ProfileHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            theme.colorScheme.primary.withOpacity(0.08),
-            theme.colorScheme.surface,
-          ],
+          colors: [theme.colorScheme.primary.withOpacity(0.08), theme.colorScheme.surface],
         ),
       ),
       child: Column(
@@ -54,9 +51,7 @@ class ProfileHeader extends StatelessWidget {
                     : null,
                 child: profilePictureUrl == null
                     ? Text(
-                        displayName.isNotEmpty
-                            ? displayName[0].toUpperCase()
-                            : 'U',
+                        displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
@@ -72,20 +67,14 @@ class ProfileHeader extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
-                child: const Icon(
-                  Icons.edit_rounded,
-                  size: 12,
-                  color: Colors.white,
-                ),
+                child: const Icon(Icons.edit_rounded, size: 12, color: Colors.white),
               ),
             ],
           ),
           const SizedBox(height: Sp.md),
           Text(
             displayName,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 2),
           Text(email, style: theme.textTheme.bodySmall),
@@ -123,18 +112,13 @@ class SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = destructive
-        ? theme.colorScheme.error
-        : (iconColor ?? theme.colorScheme.primary);
+    final color = destructive ? theme.colorScheme.error : (iconColor ?? theme.colorScheme.primary);
 
     return ListTile(
       onTap: onTap,
       leading: Container(
         padding: const EdgeInsets.all(Sp.sm),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: Radii.button,
-        ),
+        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: Radii.button),
         child: Icon(icon, color: color, size: 20),
       ),
       title: Text(
@@ -144,16 +128,11 @@ class SettingsTile extends StatelessWidget {
           color: destructive ? theme.colorScheme.error : null,
         ),
       ),
-      subtitle: subtitle != null
-          ? Text(subtitle!, style: theme.textTheme.bodySmall)
-          : null,
+      subtitle: subtitle != null ? Text(subtitle!, style: theme.textTheme.bodySmall) : null,
       trailing:
           trailing ??
           (onTap != null
-              ? Icon(
-                  Icons.chevron_right_rounded,
-                  color: theme.colorScheme.onSurfaceVariant,
-                )
+              ? Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant)
               : null),
       shape: RoundedRectangleBorder(borderRadius: Radii.button),
     );
@@ -170,199 +149,195 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final authState = ref.watch(authControllerProvider);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: const Text(
-          'Profile',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.more_vert_rounded),
-          ),
-        ],
+    return authState.when(
+      loading: () => Scaffold(
+        backgroundColor: theme.colorScheme.surface,
+        body: const SafeArea(child: Center(child: CircularProgressIndicator())),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const ProfileHeader(
-              displayName: 'Juan dela Cruz',
-              email: 'juan.delacruz@email.com',
-            ),
+      error: (error, _) => Scaffold(
+        backgroundColor: theme.colorScheme.surface,
+        appBar: AppBar(
+          title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.w800)),
+        ),
+        body: Center(child: Text('Unable to load profile: $error')),
+      ),
+      data: (user) {
+        final displayName = user?.displayName ?? 'Resident';
+        final email = user?.email ?? 'No email available';
 
-            // ── Report Stats ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.base),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SectionHeader(title: 'Report Statistics'),
-                  Row(
+        return Scaffold(
+          backgroundColor: theme.colorScheme.surface,
+          appBar: AppBar(
+            title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.w800)),
+            actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert_rounded))],
+          ),
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ProfileHeader(displayName: displayName, email: email),
+                const SizedBox(height: Sp.xl),
+
+                // ── Report Stats ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Sp.base),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _StatTile(
-                          count: 8,
-                          label: 'Submitted',
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: Sp.sm),
-                      Expanded(
-                        child: _StatTile(
-                          count: 5,
-                          label: 'Resolved',
-                          color: StatusColors.resolved,
-                        ),
-                      ),
-                      const SizedBox(width: Sp.sm),
-                      Expanded(
-                        child: _StatTile(
-                          count: 2,
-                          label: 'Pending',
-                          color: StatusColors.pending,
-                        ),
+                      const SectionHeader(title: 'Report Statistics'),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatTile(
+                              count: 8,
+                              label: 'Submitted',
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: Sp.sm),
+                          Expanded(
+                            child: _StatTile(
+                              count: 5,
+                              label: 'Resolved',
+                              color: StatusColors.resolved,
+                            ),
+                          ),
+                          const SizedBox(width: Sp.sm),
+                          Expanded(
+                            child: _StatTile(
+                              count: 2,
+                              label: 'Pending',
+                              color: StatusColors.pending,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Sp.xl),
-
-            // ── Account Settings ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.base),
-              child: Text(
-                'ACCOUNT',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
                 ),
-              ),
-            ),
-            const SizedBox(height: Sp.sm),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: Sp.base),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: Radii.card,
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-              child: Column(
-                children: [
-                  SettingsTile(
-                    icon: Icons.person_rounded,
-                    title: 'Edit Profile',
-                    subtitle: 'Update your name and photo',
-                    onTap: () {},
-                  ),
-                  Divider(
-                    height: 1,
-                    color: theme.colorScheme.outlineVariant,
-                    indent: 56,
-                  ),
-                  SettingsTile(
-                    icon: Icons.lock_rounded,
-                    title: 'Change Password',
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Sp.xl),
+                const SizedBox(height: Sp.xl),
 
-            // ── Preferences ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.base),
-              child: Text(
-                'PREFERENCES',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
+                // ── Account Settings ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Sp.base),
+                  child: Text(
+                    'ACCOUNT',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: Sp.sm),
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: Sp.base),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: Radii.card,
-                side: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-              child: Column(
-                children: [
-                  SettingsTile(
-                    icon: Icons.notifications_rounded,
-                    title: 'Notifications',
-                    subtitle: 'Manage alert preferences',
-                    onTap: () {},
+                const SizedBox(height: Sp.sm),
+                Card(
+                  margin: const EdgeInsets.symmetric(horizontal: Sp.base),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: Radii.card,
+                    side: BorderSide(color: theme.colorScheme.outlineVariant),
                   ),
-                  Divider(
-                    height: 1,
-                    color: theme.colorScheme.outlineVariant,
-                    indent: 56,
+                  child: Column(
+                    children: [
+                      SettingsTile(
+                        icon: Icons.person_rounded,
+                        title: 'Edit Profile',
+                        subtitle: 'Update your name and photo',
+                        onTap: () {},
+                      ),
+                      Divider(height: 1, color: theme.colorScheme.outlineVariant, indent: 56),
+                      SettingsTile(
+                        icon: Icons.lock_rounded,
+                        title: 'Change Password',
+                        onTap: () {},
+                      ),
+                    ],
                   ),
-                  SettingsTile(
-                    icon: Icons.dark_mode_rounded,
-                    title: 'Dark Mode',
-                    iconColor: const Color(0xFF6366F1),
-                    trailing: Switch(value: false, onChanged: (_) {}),
-                  ),
-                  Divider(
-                    height: 1,
-                    color: theme.colorScheme.outlineVariant,
-                    indent: 56,
-                  ),
-                  SettingsTile(
-                    icon: Icons.language_rounded,
-                    title: 'Language',
-                    subtitle: 'Filipino / English',
-                    iconColor: const Color(0xFF10B981),
-                    onTap: () {},
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Sp.xl),
+                ),
+                const SizedBox(height: Sp.xl),
 
-            // ── Logout ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Sp.base),
-              child: Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: Radii.card,
-                  side: BorderSide(color: theme.colorScheme.outlineVariant),
+                // ── Preferences ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Sp.base),
+                  child: Text(
+                    'PREFERENCES',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
                 ),
-                child: SettingsTile(
-                  icon: Icons.logout_rounded,
-                  title: 'Log Out',
-                  destructive: true,
-                  onTap: () {
-                    ConfirmationDialog.show(
-                      context,
+                const SizedBox(height: Sp.sm),
+                Card(
+                  margin: const EdgeInsets.symmetric(horizontal: Sp.base),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: Radii.card,
+                    side: BorderSide(color: theme.colorScheme.outlineVariant),
+                  ),
+                  child: Column(
+                    children: [
+                      SettingsTile(
+                        icon: Icons.notifications_rounded,
+                        title: 'Notifications',
+                        subtitle: 'Manage alert preferences',
+                        onTap: () {},
+                      ),
+                      Divider(height: 1, color: theme.colorScheme.outlineVariant, indent: 56),
+                      SettingsTile(
+                        icon: Icons.dark_mode_rounded,
+                        title: 'Dark Mode',
+                        iconColor: const Color(0xFF6366F1),
+                        trailing: Switch(value: false, onChanged: (_) {}),
+                      ),
+                      Divider(height: 1, color: theme.colorScheme.outlineVariant, indent: 56),
+                      SettingsTile(
+                        icon: Icons.language_rounded,
+                        title: 'Language',
+                        subtitle: 'Filipino / English',
+                        iconColor: const Color(0xFF10B981),
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: Sp.xl),
+
+                // ── Logout ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Sp.base),
+                  child: Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: Radii.card,
+                      side: BorderSide(color: theme.colorScheme.outlineVariant),
+                    ),
+                    child: SettingsTile(
+                      icon: Icons.logout_rounded,
                       title: 'Log Out',
-                      message:
-                          'Are you sure you want to log out of your account?',
-                      confirmLabel: 'Log Out',
-                      isDangerous: true,
-                      onConfirm: () {
-                        ref.read(authControllerProvider.notifier).signOut();
+                      destructive: true,
+                      onTap: () {
+                        ConfirmationDialog.show(
+                          context,
+                          title: 'Log Out',
+                          message: 'Are you sure you want to log out of your account?',
+                          confirmLabel: 'Log Out',
+                          isDangerous: true,
+                          onConfirm: () {
+                            ref.read(authControllerProvider.notifier).signOut();
+                          },
+                        );
                       },
-                    );
-                  },
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: Sp.xxxl),
+              ],
             ),
-            const SizedBox(height: Sp.xxxl),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -372,11 +347,7 @@ class _StatTile extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _StatTile({
-    required this.count,
-    required this.label,
-    required this.color,
-  });
+  const _StatTile({required this.count, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -392,18 +363,9 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(
             '$count',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              color: color,
-            ),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color),
           ),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(label, style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -479,17 +441,12 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
     final theme = Theme.of(context);
     final filtered = _selectedCategory == 'All'
         ? _mockAnnouncements
-        : _mockAnnouncements
-              .where((a) => a.category == _selectedCategory)
-              .toList();
+        : _mockAnnouncements.where((a) => a.category == _selectedCategory).toList();
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          'Announcements',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
+        title: const Text('Announcements', style: TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: Column(
         children: [
@@ -511,9 +468,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   selectedColor: theme.colorScheme.primary.withOpacity(0.15),
                   checkmarkColor: theme.colorScheme.primary,
                   side: BorderSide(
-                    color: selected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.outlineVariant,
+                    color: selected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
                   ),
                 );
               },
@@ -584,10 +539,7 @@ class _AnnouncementCard extends StatelessWidget {
         children: [
           if (pinned)
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Sp.base,
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: Sp.base, vertical: 4),
               decoration: BoxDecoration(
                 color: theme.colorScheme.primary.withOpacity(0.08),
                 borderRadius: const BorderRadius.only(
@@ -597,11 +549,7 @@ class _AnnouncementCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.push_pin_rounded,
-                    size: 12,
-                    color: theme.colorScheme.primary,
-                  ),
+                  Icon(Icons.push_pin_rounded, size: 12, color: theme.colorScheme.primary),
                   const SizedBox(width: 4),
                   Text(
                     'PINNED ANNOUNCEMENT',
@@ -630,9 +578,7 @@ class _AnnouncementCard extends StatelessWidget {
                 const SizedBox(height: Sp.sm),
                 Text(
                   title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: Sp.xs),
                 Text(

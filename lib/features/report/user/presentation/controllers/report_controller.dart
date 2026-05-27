@@ -8,6 +8,7 @@ import 'package:resolv/features/auth/presentation/controllers/auth_controller.da
 import 'package:resolv/features/report/providers/user_report_providers.dart' as report_providers;
 import 'package:resolv/features/report/repositories/report_repository.dart';
 import 'package:resolv/models/report_model.dart';
+import 'package:resolv/core/utils/result.dart';
 
 final reportControllerProvider = ChangeNotifierProvider<ReportController>((ref) {
   return ReportController();
@@ -84,13 +85,13 @@ class ReportController extends ChangeNotifier {
   }
 
   // ── Submit ────────────────────────────────────────────────────────────────
-  Future<void> onSubmit(WidgetRef ref, BuildContext context) async {
+  Future<Result<String>> onSubmit(WidgetRef ref, BuildContext context) async {
     _titleTouched = true;
     _descriptionTouched = true;
     _addressTouched = true;
 
     if (!formKey.currentState!.validate()) {
-      return;
+      return Result.failure(Failure('Please fix the highlighted fields.'));
     }
 
     _setSubmitting(true);
@@ -101,8 +102,7 @@ class ReportController extends ChangeNotifier {
 
       if (user == null) {
         setError('User not authenticated');
-        _setSubmitting(false);
-        return;
+        return Result.failure(Failure('User not authenticated'));
       }
 
       final result = await ref
@@ -119,11 +119,16 @@ class ReportController extends ChangeNotifier {
       if (result.isSuccess) {
         resetForm();
         ref.invalidate(report_providers.reportControllerProvider);
-      } else {
-        setError(result.error?.message ?? 'Failed to submit report. Please try again.');
+        return result;
       }
+
+      setError(result.error?.message ?? 'Failed to submit report. Please try again.');
+      return Result.failure(
+        Failure(result.error?.message ?? 'Failed to submit report. Please try again.'),
+      );
     } catch (e) {
       setError('An unexpected error occurred');
+      return Result.failure(Failure('An unexpected error occurred'));
     } finally {
       _setSubmitting(false);
     }
@@ -151,6 +156,7 @@ class ReportController extends ChangeNotifier {
     titleController.clear();
     descriptionController.clear();
     addressController.clear();
+    _selectedCategory = ReportCategory.other;
     _titleTouched = false;
     _descriptionTouched = false;
     _addressTouched = false;

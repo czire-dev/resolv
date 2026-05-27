@@ -53,19 +53,14 @@ final aiControllerProvider = Provider<AiController>((ref) {
 
 /// Provider for [AiNotifier].
 /// Manages the state of AI analysis operations.
-final aiNotifierProvider = AsyncNotifierProvider<AiNotifier, AiAnalysisState?>(
-  () => AiNotifier(),
-);
+final aiNotifierProvider = AsyncNotifierProvider<AiNotifier, AiAnalysisState?>(() => AiNotifier());
 
 // ─── DATA STREAM PROVIDERS ───────────────────────────────────────────────────
 
 /// Stream provider for all incidents (real-time updates).
 /// Filters by category and status.
 final incidentsStreamProvider =
-    StreamProvider.family<
-      List<IncidentModel>,
-      ({String? category, String? status})
-    >((ref, params) {
+    StreamProvider.family<List<IncidentModel>, ({String? category, String? status})>((ref, params) {
       final firestore = FirebaseFirestore.instance;
       final collectionRef = firestore.collection('incidents');
 
@@ -80,8 +75,7 @@ final incidentsStreamProvider =
       }
 
       return query.snapshots().map(
-        (snapshot) =>
-            snapshot.docs.map((doc) => IncidentModel.fromDoc(doc)).toList(),
+        (snapshot) => snapshot.docs.map((doc) => IncidentModel.fromDoc(doc)).toList(),
       );
     });
 
@@ -92,51 +86,41 @@ final reportsStreamProvider = StreamProvider<List<ReportModel>>((ref) {
       .collection('reports')
       .orderBy('submittedAt', descending: true)
       .snapshots()
-      .map(
-        (snapshot) =>
-            snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList(),
-      );
+      .map((snapshot) => snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList());
 });
 
 /// Stream provider for reports by user (real-time updates).
-final userReportsStreamProvider =
-    StreamProvider.family<List<ReportModel>, String>((ref, userId) {
-      final firestore = FirebaseFirestore.instance;
-      return firestore
-          .collection('reports')
-          .where('submittedByUid', isEqualTo: userId)
-          .orderBy('submittedAt', descending: true)
-          .snapshots()
-          .map(
-            (snapshot) =>
-                snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList(),
-          );
-    });
+final userReportsStreamProvider = StreamProvider.family<List<ReportModel>, String>((ref, userId) {
+  final firestore = FirebaseFirestore.instance;
+  return firestore.collection('reports').where('submittedByUid', isEqualTo: userId).snapshots().map(
+    (snapshot) {
+      final reports = snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList();
+      reports.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+      return reports;
+    },
+  );
+});
 
 /// Stream provider for duplicate reports (reports where isDuplicate == true).
 final duplicateReportsStreamProvider = StreamProvider<List<ReportModel>>((ref) {
   final firestore = FirebaseFirestore.instance;
-  return firestore
-      .collection('reports')
-      .where('isDuplicate', isEqualTo: true)
-      .orderBy('submittedAt', descending: true)
-      .snapshots()
-      .map(
-        (snapshot) =>
-            snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList(),
-      );
+  return firestore.collection('reports').where('isDuplicate', isEqualTo: true).snapshots().map((
+    snapshot,
+  ) {
+    final reports = snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList();
+    reports.sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+    return reports;
+  });
 });
 
 /// Stream provider for open incidents (real-time updates).
 final openIncidentsStreamProvider = StreamProvider<List<IncidentModel>>((ref) {
   final firestore = FirebaseFirestore.instance;
-  return firestore
-      .collection('incidents')
-      .where('status', isEqualTo: 'active')
-      .orderBy('lastReportAt', descending: true)
-      .snapshots()
-      .map(
-        (snapshot) =>
-            snapshot.docs.map((doc) => IncidentModel.fromDoc(doc)).toList(),
-      );
+  return firestore.collection('incidents').where('status', isEqualTo: 'active').snapshots().map((
+    snapshot,
+  ) {
+    final incidents = snapshot.docs.map((doc) => IncidentModel.fromDoc(doc)).toList();
+    incidents.sort((a, b) => b.lastReportAt.compareTo(a.lastReportAt));
+    return incidents;
+  });
 });

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:resolv/features/report/providers/ai_providers.dart';
 import 'package:resolv/features/report/user/presentation/controllers/report_controller.dart';
+import 'package:resolv/features/report/providers/user_report_providers.dart' as report_providers;
 import 'package:resolv/routing/app_routes.dart';
 import '../widgets/report_form_fields.dart';
 
@@ -13,7 +15,7 @@ class CreateReportScreen extends ConsumerWidget {
   final VoidCallback? onBack;
   final VoidCallback? onSubmitSuccess;
 
-  void _showSuccessSheet(BuildContext context) {
+  void _showSuccessSheet(BuildContext context, {String? analysisMessage}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -23,6 +25,7 @@ class CreateReportScreen extends ConsumerWidget {
           Navigator.of(context).pop(); // close sheet
           onSubmitSuccess?.call();
         },
+        message: analysisMessage,
       ),
     );
   }
@@ -69,6 +72,12 @@ class CreateReportScreen extends ConsumerWidget {
                   textInputAction: TextInputAction.next,
                   isRequired: true,
                   onChanged: reportController.onTitleChanged,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Title is required';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
 
@@ -90,6 +99,12 @@ class CreateReportScreen extends ConsumerWidget {
                   keyboardType: TextInputType.multiline,
                   isRequired: true,
                   onChanged: reportController.onDescriptionChanged,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Description is required';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
 
@@ -146,10 +161,34 @@ class CreateReportScreen extends ConsumerWidget {
         canSubmit: reportController.canSubmit,
         isLoading: reportController.isSubmitting,
         onSubmit: () async {
-          await reportController.onSubmit(ref, context);
-          if (reportController.errorMessage == null) {
-            _showSuccessSheet(context);
+          final submitResult = await reportController.onSubmit(ref, context);
+
+          if (!submitResult.isSuccess) {
+            return;
           }
+
+          final reportId = submitResult.data!;
+          final reportResult = await ref
+              .read(report_providers.reportRepositoryProvider)
+              .fetchReportById(reportId);
+
+          String? analysisMessage;
+          if (reportResult.isSuccess) {
+            ref.read(aiNotifierProvider.notifier).clearState();
+            await ref.read(aiNotifierProvider.notifier).analyzeReport(reportResult.data!);
+            final aiState = ref.read(aiNotifierProvider);
+            if (aiState.hasError) {
+              analysisMessage = 'Report submitted. AI processing will continue in the background.';
+            } else if (aiState.value != null) {
+              analysisMessage = aiState.value!.isDuplicate
+                  ? 'Report was linked to an existing incident.'
+                  : 'Report was analyzed and a new incident was created.';
+            }
+          } else {
+            analysisMessage = 'Report submitted successfully. AI processing will continue shortly.';
+          }
+
+          _showSuccessSheet(context, analysisMessage: analysisMessage);
         },
       ),
     );
@@ -272,8 +311,9 @@ class _SubmitBar extends StatelessWidget {
 // ── Success Bottom Sheet ──────────────────────────────────────────────────────
 
 class _SubmitSuccessSheet extends StatelessWidget {
-  const _SubmitSuccessSheet({required this.onDone});
+  const _SubmitSuccessSheet({required this.onDone, this.message});
   final VoidCallback onDone;
+  final String? message;
 
   @override
   Widget build(BuildContext context) {
@@ -313,6 +353,14 @@ class _SubmitSuccessSheet extends StatelessWidget {
             style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant, height: 1.5),
             textAlign: TextAlign.center,
           ),
+          if (message != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              message!,
+              style: text.bodySmall?.copyWith(color: colors.onSurfaceVariant, height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+          ],
           const SizedBox(height: 28),
           SizedBox(
             width: double.infinity,

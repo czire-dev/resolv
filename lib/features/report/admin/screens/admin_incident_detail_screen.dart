@@ -546,7 +546,7 @@ class _TimelineTab extends StatelessWidget {
               ),
             ),
           )
-          .toList(),
+          ,
     ];
 
     return SingleChildScrollView(

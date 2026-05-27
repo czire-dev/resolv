@@ -44,12 +44,7 @@ class HomeScreen extends ConsumerWidget {
             // ── Search Bar ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  Sp.base,
-                  0,
-                  Sp.base,
-                  Sp.base,
-                ),
+                padding: const EdgeInsets.fromLTRB(Sp.base, 0, Sp.base, Sp.base),
                 child: SearchBarWidget(
                   hintText: 'Search reports, incidents...',
                   onFilterTap: () {},
@@ -121,9 +116,7 @@ class _HomeHeader extends StatelessWidget {
                   ),
                   Text(
                     'Mabuhay Maruleño! 👋',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -147,13 +140,26 @@ class _HomeHeader extends StatelessWidget {
                 child: Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFDC2626),
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: const BoxDecoration(color: Color(0xFFDC2626), shape: BoxShape.circle),
                 ),
               ),
             ],
+          ),
+          // Profile
+          IconButton(
+            onPressed: () => context.go(AppRoutes.profile),
+            icon: CircleAvatar(
+              radius: 18,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Text(
+                'R',
+                style: TextStyle(fontWeight: FontWeight.w800, color: theme.colorScheme.primary),
+              ),
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: theme.colorScheme.surfaceContainerLow,
+              shape: RoundedRectangleBorder(borderRadius: Radii.button),
+            ),
           ),
         ],
       ),
@@ -177,10 +183,7 @@ class _HeroBanner extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.primary,
-              theme.colorScheme.primary.withOpacity(0.8),
-            ],
+            colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.8)],
           ),
           borderRadius: Radii.card,
         ),
@@ -230,11 +233,7 @@ class _HeroBanner extends StatelessWidget {
               ),
             ),
             const SizedBox(width: Sp.md),
-            Icon(
-              Icons.location_city_rounded,
-              size: 72,
-              color: Colors.white.withOpacity(0.15),
-            ),
+            Icon(Icons.location_city_rounded, size: 72, color: Colors.white.withOpacity(0.15)),
           ],
         ),
       ),
@@ -272,9 +271,7 @@ class _HeroButton extends StatelessWidget {
             Icon(
               icon,
               size: 14,
-              color: filled
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.white,
+              color: filled ? Theme.of(context).colorScheme.primary : Colors.white,
             ),
             const SizedBox(width: 4),
             Text(
@@ -282,9 +279,7 @@ class _HeroButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: filled
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.white,
+                color: filled ? Theme.of(context).colorScheme.primary : Colors.white,
               ),
             ),
           ],
@@ -389,18 +384,13 @@ class _QuickActionTile extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(Sp.sm),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: Radii.button,
-              ),
+              decoration: BoxDecoration(color: bgColor, borderRadius: Radii.button),
               child: Icon(icon, color: color, size: 22),
             ),
             const SizedBox(height: Sp.sm),
             Text(
               label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700),
               textAlign: TextAlign.center,
               maxLines: 2,
             ),
@@ -491,18 +481,9 @@ class _StatusCountTile extends StatelessWidget {
         children: [
           Text(
             '$count',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: color,
-            ),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: color),
           ),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(label, style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -538,9 +519,9 @@ class _RecentIncidentsSection extends ConsumerWidget {
               child: Center(
                 child: Text(
                   'Failed to load incidents',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.error),
                 ),
               ),
             ),
@@ -633,10 +614,7 @@ class _AnnouncementsPreviewSection extends StatelessWidget {
                     children: [
                       if (a.pinned) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primary.withOpacity(0.1),
                             borderRadius: Radii.chip,

@@ -28,11 +28,10 @@ class AiAnalysisState {
 /// Notifier for managing AI analysis workflow state.
 /// Handles classification and deduplication of reports.
 class AiNotifier extends AsyncNotifier<AiAnalysisState?> {
-  late final AiController _controller;
+  AiController get _controller => ref.read(aiControllerProvider);
 
   @override
   FutureOr<AiAnalysisState?> build() async {
-    _controller = ref.watch(aiControllerProvider);
     return null;
   }
 
@@ -40,11 +39,15 @@ class AiNotifier extends AsyncNotifier<AiAnalysisState?> {
   /// Classifies the report and determines if it's a duplicate.
   Future<void> analyzeReport(ReportModel report) async {
     state = const AsyncValue.loading();
+    print('[AiNotifier] Starting analysis for report ${report.id}');
 
     final result = await _controller.analyzeAndProcessReport(report: report);
 
     if (result.isSuccess) {
       final workflow = result.data!;
+      print(
+        '[AiNotifier] Analysis succeeded: incidentId=${workflow.incidentId}, isDuplicate=${workflow.isDuplicate}',
+      );
       state = AsyncValue.data(
         AiAnalysisState(
           reportId: workflow.reportId,
@@ -54,6 +57,7 @@ class AiNotifier extends AsyncNotifier<AiAnalysisState?> {
         ),
       );
     } else {
+      print('[AiNotifier] Analysis failed: ${result.error!.message}');
       state = AsyncValue.error(result.error!.message, StackTrace.current);
     }
   }

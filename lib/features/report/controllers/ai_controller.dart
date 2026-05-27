@@ -39,6 +39,8 @@ class AiController {
     required ReportModel report,
   }) async {
     try {
+      print('[AI] Starting analysis for report ${report.id}');
+
       // Step 1: Classify the report
       final classifyResult = await _aiRepository.classifyReport(
         title: report.title,
@@ -46,10 +48,14 @@ class AiController {
       );
 
       if (classifyResult.isFailure) {
+        print('[AI] Classification failed: ${classifyResult.error}');
         return Result.failure(classifyResult.error!);
       }
 
       final aiAnalysis = classifyResult.data!;
+      print(
+        '[AI] Classification result: category=${aiAnalysis.predictedCategory}, priority=${aiAnalysis.priority}, confidence=${aiAnalysis.confidence}',
+      );
 
       // Step 2: Query for active incidents in the same category
       final activeIncidents = await _queryActiveIncidents(report.category);
@@ -66,9 +72,13 @@ class AiController {
 
         if (duplicateResult.isSuccess) {
           final checkResult = duplicateResult.data!;
+          print(
+            '[AI] Duplicate check vs ${incident.id}: sameIncident=${checkResult.sameIncident}, confidence=${checkResult.confidence}',
+          );
           if (checkResult.isDuplicateWithThreshold) {
             matchingIncidentId = incident.id;
             bestConfidence = checkResult.confidence;
+            print('[AI] Duplicate found! Matching incident: $matchingIncidentId');
             break;
           }
         }
@@ -76,6 +86,7 @@ class AiController {
 
       // Step 4a: Duplicate found - attach to existing incident
       if (matchingIncidentId != null) {
+        print('[AI] Attaching report to existing incident: $matchingIncidentId');
         final updateResult = await _attachReportToIncident(
           reportId: report.id,
           incidentId: matchingIncidentId,
@@ -84,9 +95,11 @@ class AiController {
         );
 
         if (updateResult.isFailure) {
+          print('[AI] Failed to attach report: ${updateResult.error}');
           return Result.failure(updateResult.error!);
         }
 
+        print('[AI] Report successfully attached as duplicate');
         return Result.success(
           AnalysisWorkflowResult(
             reportId: report.id,
@@ -99,16 +112,16 @@ class AiController {
       }
 
       // Step 4b: No duplicate - create new incident
-      final newIncidentResult = await _createNewIncident(
-        report: report,
-        aiAnalysis: aiAnalysis,
-      );
+      print('[AI] No duplicate found. Creating new incident.');
+      final newIncidentResult = await _createNewIncident(report: report, aiAnalysis: aiAnalysis);
 
       if (newIncidentResult.isFailure) {
+        print('[AI] Failed to create incident: ${newIncidentResult.error}');
         return Result.failure(newIncidentResult.error!);
       }
 
       final newIncident = newIncidentResult.data!;
+      print('[AI] New incident created: ${newIncident.id}');
 
       // Update report with incident reference
       final updateResult = await _attachReportToIncident(
@@ -119,9 +132,12 @@ class AiController {
       );
 
       if (updateResult.isFailure) {
+        print('[AI] Failed to attach new report: ${updateResult.error}');
         return Result.failure(updateResult.error!);
       }
 
+      print('[AI] Report successfully linked to new incident');
+      print('[AI] ✓ Analysis workflow complete');
       return Result.success(
         AnalysisWorkflowResult(
           reportId: report.id,
@@ -132,14 +148,14 @@ class AiController {
         ),
       );
     } catch (e) {
+      print('[AI] ✗ Workflow failed: $e');
       return Result.failure(Failure('AI workflow failed: $e'));
     }
   }
 
   /// Fetches active incidents in a specific category within the time window.
-  Future<List<IncidentModel>> _queryActiveIncidents(
-    ReportCategory category,
-  ) async {
+  /// Queries by category and status, filters by time client-side to avoid composite index.
+  Future<List<IncidentModel>> _queryActiveIncidents(ReportCategory category) async {
     try {
       final cutoffTime = DateTime.now().subtract(_activeIncidentWindow);
 
@@ -147,11 +163,22 @@ class AiController {
           .collection(_incidentsCollection)
           .where('category', isEqualTo: category.value)
           .where('status', isEqualTo: IncidentStatus.active.name)
-          .where('lastReportAt', isGreaterThan: Timestamp.fromDate(cutoffTime))
+          .limit(50) // Fetch more to allow client-side filtering
           .get();
 
-      return snapshot.docs.map((doc) => IncidentModel.fromDoc(doc)).toList();
+      // Client-side filtering by lastReportAt to avoid composite index
+      final incidents = snapshot.docs
+          .map((doc) => IncidentModel.fromDoc(doc))
+          .where((incident) => incident.lastReportAt.isAfter(cutoffTime))
+          .take(10) // Return maximum 10 incidents
+          .toList();
+
+      print(
+        '[AI] Query active incidents: found ${incidents.length} candidates for category ${category.value}',
+      );
+      return incidents;
     } catch (e) {
+      print('[AI] Error querying active incidents: $e');
       return [];
     }
   }
@@ -177,14 +204,18 @@ class AiController {
         'aiGenerated': true,
       };
 
+      print('[AI] Creating incident with title: ${aiAnalysis.incidentSummary}');
       final result = await _incidentService.createIncident(incidentData);
 
       if (result.isSuccess) {
+        print('[AI] Incident created successfully: ${result.data!.id}');
         return Result.success(result.data!);
       } else {
+        print('[AI] Failed to create incident: ${result.error}');
         return Result.failure(result.error!);
       }
     } catch (e) {
+      print('[AI] Exception in _createNewIncident: $e');
       return Result.failure(Failure('Failed to create incident: $e'));
     }
   }
@@ -197,6 +228,8 @@ class AiController {
     required bool isDuplicate,
   }) async {
     try {
+      print('[AI] Attaching report $reportId to incident $incidentId (isDuplicate=$isDuplicate)');
+
       // Update report with incident reference and AI analysis
       final reportUpdateResult = await _reportService.updateReport(reportId, {
         'incidentId': incidentId,
@@ -206,6 +239,7 @@ class AiController {
       });
 
       if (reportUpdateResult.isFailure) {
+        print('[AI] Failed to update report: ${reportUpdateResult.error}');
         return Result.failure(reportUpdateResult.error!);
       }
 
@@ -217,8 +251,10 @@ class AiController {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
+      print('[AI] Report successfully attached to incident');
       return Result.success(null);
     } catch (e) {
+      print('[AI] Exception in _attachReportToIncident: $e');
       return Result.failure(Failure('Failed to attach report to incident: $e'));
     }
   }
