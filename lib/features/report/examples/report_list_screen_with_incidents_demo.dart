@@ -9,6 +9,7 @@
 ///
 /// Reference: See lib/features/report/user/presentation/screens/report_list_screen.dart
 /// for the production-ready implementation connected to Firestore.
+library;
 
 // lib/features/report/user/presentation/screens/report_list_screen.dart
 // RESOLV — Resident Report List Screen

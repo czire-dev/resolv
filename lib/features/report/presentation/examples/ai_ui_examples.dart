@@ -14,7 +14,7 @@ import 'package:resolv/models/report_model.dart';
 class ReportSubmissionWithAi extends ConsumerWidget {
   final ReportModel submittedReport;
 
-  const ReportSubmissionWithAi({required this.submittedReport});
+  const ReportSubmissionWithAi({super.key, required this.submittedReport});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -66,6 +66,8 @@ class ReportSubmissionWithAi extends ConsumerWidget {
 
 /// Example widget replacing mock incident data with Firestore stream.
 class IncidentListFromFirestore extends ConsumerWidget {
+  const IncidentListFromFirestore({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch the incidents stream from Firestore
@@ -105,7 +107,7 @@ class IncidentListFromFirestore extends ConsumerWidget {
 class UserReportsWithAnalysis extends ConsumerWidget {
   final String userId;
 
-  const UserReportsWithAnalysis({required this.userId});
+  const UserReportsWithAnalysis({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -207,6 +209,8 @@ class UserReportsWithAnalysis extends ConsumerWidget {
 
 /// Example widget showing all reports grouped by their incidents.
 class ReportsByIncident extends ConsumerWidget {
+  const ReportsByIncident({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reportsAsync = ref.watch(reportsStreamProvider);
@@ -272,6 +276,8 @@ class ReportsByIncident extends ConsumerWidget {
 
 /// Example dashboard showing AI-powered metrics.
 class AiDashboard extends ConsumerWidget {
+  const AiDashboard({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reportsAsync = ref.watch(reportsStreamProvider);

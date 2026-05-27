@@ -12,6 +12,8 @@ class AdminReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tags = report.aiAnalysis?.tags ?? const <String>[];
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: ListTile(
@@ -27,14 +29,40 @@ class AdminReportCard extends StatelessWidget {
           children: [
             Text(report.submittedByName),
             const SizedBox(height: 4),
+            Text(
+              report.category.label,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 4),
             Row(
               children: [
                 _StatusChip(status: report.status),
                 const SizedBox(width: 8),
                 if (report.aiAnalysis?.priority != null)
-                  _PriorityChip(priority: report.aiAnalysis!.priority!),
+                  _PriorityChip(priority: report.aiAnalysis!.priority),
               ],
             ),
+            if (tags.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: tags
+                    .take(3)
+                    .map(
+                      (tag) => Chip(
+                        label: Text(
+                          '#$tag',
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                        padding: EdgeInsets.zero,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
           ],
         ),
         trailing: Text(

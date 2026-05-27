@@ -9,9 +9,7 @@ import 'package:resolv/features/auth/presentation/controllers/auth_controller.da
 import 'package:resolv/features/profile/presentation/screens/profile_screen.dart';
 import 'package:resolv/features/report/admin/screens/admin_dashboard_screen.dart';
 import 'package:resolv/features/report/admin/screens/admin_report_detail_screen.dart';
-import 'package:resolv/features/report/admin/screens/admin_incident_detail_screen.dart'
-    hide AdminReportDetailScreen;
-import 'package:resolv/features/report/providers/incident_providers.dart';
+import 'package:resolv/features/report/admin/screens/admin_incident_detail_screen.dart';
 import 'package:resolv/features/report/user/presentation/screens/home_screen.dart';
 import '../features/report/providers/user_report_providers.dart';
 import 'package:resolv/features/report/user/presentation/screens/create_report_screen.dart';
@@ -20,11 +18,8 @@ import 'package:resolv/features/report/user/presentation/screens/report_list_scr
 import 'package:resolv/features/auth/presentation/screens/login_screen.dart';
 import 'package:resolv/features/auth/presentation/screens/register_screen.dart';
 import 'package:resolv/features/auth/presentation/screens/forgot_password_screen.dart';
-import 'package:resolv/features/report/user/repositories/report_mock_data.dart';
 import 'package:resolv/models/report_model.dart';
 import 'package:resolv/models/report_ui_model.dart';
-import 'package:resolv/models/incident_model.dart';
-import 'package:resolv/features/report/repositories/incident_repository.dart';
 import 'package:resolv/routing/app_routes.dart';
 import 'package:resolv/routing/router_notifier.dart';
 
@@ -195,11 +190,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             // Full path: /admin/reports/:reportId
             path: ':reportId',
             builder: (context, state) {
-              // Always passed via extra — never fetched inside the route builder.
-              // If extra is null (deep link), the redirect guard above would have
-              // required auth, so we can safely require extra here for MVP.
-              final report = state.extra as ReportModel;
-              return AdminReportDetailScreen(report: report);
+              final reportId = state.pathParameters['reportId']!;
+              return AdminReportDetailScreen(reportId: reportId);
             },
           ),
         ],
@@ -219,47 +211,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: ':incidentId',
             builder: (context, state) {
               final incidentId = state.pathParameters['incidentId']!;
-              final incident = state.extra as IncidentModel?;
-
-              if (incident != null) {
-                return AdminIncidentDetailScreen(incidentId: incidentId);
-              }
-
-              // If not passed via extra, fetch from Firestore
-              final future = ref
-                  .read(incidentRepositoryProvider)
-                  .fetchIncidentById(incidentId);
-
-              return FutureBuilder<Result<IncidentModel?>>(
-                future: future,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Scaffold(
-                      body: SafeArea(
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                    );
-                  }
-
-                  final result = snapshot.data;
-                  if (result == null ||
-                      result.isFailure ||
-                      result.data == null) {
-                    return Scaffold(
-                      body: SafeArea(
-                        child: Center(
-                          child: Text(
-                            result?.error?.message ?? 'Incident not found',
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  final fetchedIncident = result.data!;
-                  return AdminIncidentDetailScreen(incidentId: incidentId);
-                },
-              );
+              return AdminIncidentDetailScreen(incidentId: incidentId);
             },
           ),
         ],

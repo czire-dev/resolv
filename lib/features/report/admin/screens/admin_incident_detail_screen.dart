@@ -1,82 +1,30 @@
-// lib/features/report/admin/screens/admin_incident_detail_screen.dart
-// RESOLV — Admin Incident Detail Screen (core of the system)
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:resolv/core/enums/incident_enums.dart';
+import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/core/themes/ui_constants.dart';
 import 'package:resolv/features/report/admin/widgets/admin_widgets.dart';
+import 'package:resolv/features/report/providers/ai_providers.dart';
+import 'package:resolv/features/report/providers/incident_providers.dart';
+import 'package:resolv/models/incident_model.dart';
+import 'package:resolv/models/report_model.dart';
+import 'package:resolv/routing/app_routes.dart';
 import 'package:resolv/shared/widgets/badges.dart';
 import 'package:resolv/shared/widgets/layouts.dart';
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-final _mockLinkedReports = [
-  (
-    id: 'r1',
-    title: 'Large pothole near Mabini corner',
-    description: 'There is a very large pothole causing accidents.',
-    status: 'inProgress',
-    submittedAt: 'May 20',
-    address: '23 Mabini St.',
-    submittedBy: 'Juan dela Cruz',
-    isDuplicate: false,
-  ),
-  (
-    id: 'r2',
-    title: 'Road damage — cracking since last month',
-    description: 'The road has been cracking. Very dangerous for motorcycles.',
-    status: 'pending',
-    submittedAt: 'May 18',
-    address: '17 Mabini St.',
-    submittedBy: 'Maria Santos',
-    isDuplicate: true,
-  ),
-  (
-    id: 'r3',
-    title: 'Multiple potholes blocking lane',
-    description: 'Several potholes are blocking the right lane completely.',
-    status: 'pending',
-    submittedAt: 'May 15',
-    address: '5 Mabini St.',
-    submittedBy: 'Jose Garcia',
-    isDuplicate: true,
-  ),
-];
-
-final _mockTimeline = [
-  (
-    status: 'pending',
-    remark: 'Incident created from 3 merged reports.',
-    timeAgo: '3 days ago',
-    author: 'AI System',
-  ),
-  (
-    status: 'underReview',
-    remark: 'Assigned to Barangay Engineering Office for inspection.',
-    timeAgo: '2 days ago',
-    author: 'Admin Reyes',
-  ),
-  (
-    status: 'inProgress',
-    remark: 'Engineering team dispatched. Work begins this week.',
-    timeAgo: '1 day ago',
-    author: 'Admin Reyes',
-  ),
-];
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-class AdminIncidentDetailScreen extends StatefulWidget {
-  // In production this would be an IncidentModel passed via router
+class AdminIncidentDetailScreen extends ConsumerStatefulWidget {
   final String incidentId;
 
-  const AdminIncidentDetailScreen({super.key, this.incidentId = 'i1'});
+  const AdminIncidentDetailScreen({super.key, required this.incidentId});
 
   @override
-  State<AdminIncidentDetailScreen> createState() =>
+  ConsumerState<AdminIncidentDetailScreen> createState() =>
       _AdminIncidentDetailScreenState();
 }
 
-class _AdminIncidentDetailScreenState extends State<AdminIncidentDetailScreen>
+class _AdminIncidentDetailScreenState
+    extends ConsumerState<AdminIncidentDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -94,44 +42,97 @@ class _AdminIncidentDetailScreenState extends State<AdminIncidentDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final incidentsAsync =
+        ref.watch(incidentsStreamProvider((category: null, status: null)));
+    final reportsAsync = ref.watch(reportsStreamProvider);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          // ── Sliver header ──
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 180,
-            forceElevated: innerBoxIsScrolled,
-            actions: [
-              IconButton(
-                onPressed: () => _showAdminActions(context),
-                icon: const Icon(Icons.more_vert_rounded),
-              ),
-            ],
-            flexibleSpace: FlexibleSpaceBar(background: _IncidentHeroHeader()),
-            bottom: TabBar(
-              controller: _tabController,
-              tabs: [
-                const Tab(text: 'Overview'),
-                Tab(text: 'Reports (${_mockLinkedReports.length})'),
-                const Tab(text: 'Timeline'),
-              ],
-            ),
-          ),
-        ],
-        body: TabBarView(
-          controller: _tabController,
-          children: [_OverviewTab(), _LinkedReportsTab(), _TimelineTab()],
-        ),
+    return incidentsAsync.when(
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) => Scaffold(
+        appBar: AppBar(title: const Text('Incident Detail')),
+        body: ErrorStateWidget(message: error.toString()),
       ),
-      bottomNavigationBar: _AdminActionBar(),
+      data: (incidents) {
+        final incident = _findIncident(incidents, widget.incidentId);
+        if (incident == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Incident Detail')),
+            body: const EmptyStateWidget(
+              icon: Icons.warning_amber_outlined,
+              title: 'Incident not found',
+              message: 'This incident may have been removed.',
+            ),
+          );
+        }
+
+        return reportsAsync.when(
+          loading: () => const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          ),
+          error: (error, _) => Scaffold(
+            appBar: AppBar(title: const Text('Incident Detail')),
+            body: ErrorStateWidget(message: error.toString()),
+          ),
+          data: (reports) {
+            final linkedReports = reports
+                .where((r) => r.incidentId == incident.id)
+                .toList()
+              ..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+
+            return Scaffold(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              body: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                  SliverAppBar(
+                    pinned: true,
+                    expandedHeight: 180,
+                    forceElevated: innerBoxIsScrolled,
+                    actions: [
+                      IconButton(
+                        onPressed: () => _showAdminActions(context, incident),
+                        icon: const Icon(Icons.more_vert_rounded),
+                      ),
+                    ],
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: _IncidentHeroHeader(incident: incident),
+                    ),
+                    bottom: TabBar(
+                      controller: _tabController,
+                      tabs: [
+                        const Tab(text: 'Overview'),
+                        Tab(text: 'Reports (${linkedReports.length})'),
+                        const Tab(text: 'Timeline'),
+                      ],
+                    ),
+                  ),
+                ],
+                body: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _OverviewTab(incident: incident, linkedReports: linkedReports),
+                    _LinkedReportsTab(linkedReports: linkedReports),
+                    _TimelineTab(incident: incident, linkedReports: linkedReports),
+                  ],
+                ),
+              ),
+              bottomNavigationBar: _AdminActionBar(
+                onUpdateStatus: () => _showStatusUpdateSheet(context, incident),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
-  void _showAdminActions(BuildContext context) {
+  IncidentModel? _findIncident(List<IncidentModel> incidents, String id) {
+    final matches = incidents.where((incident) => incident.id == id);
+    return matches.isEmpty ? null : matches.first;
+  }
+
+  void _showAdminActions(BuildContext context, IncidentModel incident) {
+    final theme = Theme.of(context);
+
     ActionBottomSheet.show(
       context,
       title: 'Incident Actions',
@@ -140,36 +141,94 @@ class _AdminIncidentDetailScreenState extends State<AdminIncidentDetailScreen>
           label: 'Mark as Resolved',
           icon: Icons.check_circle_rounded,
           color: StatusColors.resolved,
-          onTap: () {},
+          onTap: () => _updateIncidentStatus(incident, IncidentStatus.resolved),
         ),
         BottomSheetAction(
-          label: 'Change Priority',
-          icon: Icons.flag_rounded,
-          onTap: () {},
+          label: 'Mark as Monitoring',
+          icon: Icons.visibility_rounded,
+          onTap: () => _updateIncidentStatus(incident, IncidentStatus.monitoring),
         ),
         BottomSheetAction(
-          label: 'Add Remark',
-          icon: Icons.comment_rounded,
-          onTap: () {},
+          label: 'Set as Active',
+          icon: Icons.bolt_rounded,
+          onTap: () => _updateIncidentStatus(incident, IncidentStatus.active),
         ),
         BottomSheetAction(
           label: 'Close Incident',
           icon: Icons.archive_rounded,
           color: theme.colorScheme.error,
-          onTap: () {},
+          onTap: () => _updateIncidentStatus(incident, IncidentStatus.resolved),
         ),
       ],
     );
   }
 
-  ThemeData get theme => Theme.of(context);
+  void _showStatusUpdateSheet(BuildContext context, IncidentModel incident) {
+    final statuses = [
+      (
+        IncidentStatus.active,
+        'Active',
+        StatusColors.inProgress,
+        Icons.construction_rounded,
+      ),
+      (
+        IncidentStatus.monitoring,
+        'Monitoring',
+        StatusColors.underReview,
+        Icons.manage_search_rounded,
+      ),
+      (
+        IncidentStatus.resolved,
+        'Resolved',
+        StatusColors.resolved,
+        Icons.check_circle_rounded,
+      ),
+    ];
+
+    ActionBottomSheet.show(
+      context,
+      title: 'Update Incident Status',
+      actions: statuses
+          .map(
+            (s) => BottomSheetAction(
+              label: s.$2,
+              icon: s.$4,
+              color: s.$3,
+              onTap: () => _updateIncidentStatus(incident, s.$1),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Future<void> _updateIncidentStatus(
+    IncidentModel incident,
+    IncidentStatus newStatus,
+  ) async {
+    final result = await ref.read(incidentRepositoryProvider).updateIncidentStatus(
+          incidentId: incident.id,
+          newStatus: newStatus,
+        );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result.isSuccess
+              ? 'Incident status updated'
+              : (result.error?.message ?? 'Failed to update incident'),
+        ),
+      ),
+    );
+  }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HERO HEADER
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _IncidentHeroHeader extends StatelessWidget {
+  final IncidentModel incident;
+
+  const _IncidentHeroHeader({required this.incident});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -187,60 +246,66 @@ class _IncidentHeroHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              const CategoryChip(category: 'Infrastructure'),
+              CategoryChip(category: incident.category.label),
               const SizedBox(width: Sp.sm),
-              const AiBadge(),
+              if (incident.aiGenerated) const AiBadge(),
               const Spacer(),
-              const PriorityBadge(priority: 'High'),
+              PriorityBadge(priority: incident.priority.name),
             ],
           ),
           const SizedBox(height: Sp.sm),
           Text(
-            'Damaged Road on Mabini Street',
+            incident.title,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
             maxLines: 2,
           ),
           const SizedBox(height: Sp.xs),
-          const StatusBadge(status: 'inProgress'),
+          StatusBadge(status: _statusLabel(incident.status), compact: true),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// OVERVIEW TAB
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _OverviewTab extends StatelessWidget {
+  final IncidentModel incident;
+  final List<ReportModel> linkedReports;
+
+  const _OverviewTab({required this.incident, required this.linkedReports});
+
   @override
   Widget build(BuildContext context) {
+    final firstReportAt = linkedReports.isEmpty
+        ? incident.createdAt
+        : linkedReports.last.submittedAt;
+    final summarySource =
+        linkedReports.isEmpty ? null : linkedReports.first.aiAnalysis;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(Sp.base),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Incident Summary Panel
           IncidentSummaryPanel(
-            reportCount: _mockLinkedReports.length,
-            firstReportDate: 'May 15, 2026',
-            lastUpdated: '1 day ago',
-            category: 'Infrastructure',
-            aiGenerated: true,
+            reportCount: incident.reportCount,
+            firstReportDate:
+                '${firstReportAt.month}/${firstReportAt.day}/${firstReportAt.year}',
+            lastUpdated: _timeAgo(incident.updatedAt),
+            category: incident.category.label,
+            aiGenerated: incident.aiGenerated,
           ),
           const SizedBox(height: Sp.base),
-
-          // AI Analysis
           const SectionHeader(title: 'AI Analysis'),
-          const AIAnalysisPanel(
-            predictedCategory: 'Infrastructure',
-            priority: 'High',
-            confidence: 0.91,
-            tags: ['pothole', 'road', 'hazard', 'mabini'],
+          AIAnalysisPanel(
+            predictedCategory:
+                summarySource?.predictedCategory ?? incident.category.label,
+            priority: summarySource?.priority ?? incident.priority.name,
+            confidence: summarySource?.confidence ?? 0.0,
+            tags: summarySource?.tags ?? incident.tags,
             incidentSummary:
-                'Multiple residents have reported severe road deterioration on Mabini Street. The damage appears to span several blocks, presenting a significant safety risk to motorists and pedestrians.',
+                summarySource?.incidentSummary ?? 'No AI summary available.',
           ),
           const SizedBox(height: Sp.xxxl),
         ],
@@ -249,18 +314,16 @@ class _OverviewTab extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LINKED REPORTS TAB
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _LinkedReportsTab extends StatelessWidget {
+  final List<ReportModel> linkedReports;
+
+  const _LinkedReportsTab({required this.linkedReports});
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return ListView(
       padding: const EdgeInsets.all(Sp.base),
       children: [
-        // Deduplication explanation card
         Container(
           padding: const EdgeInsets.all(Sp.md),
           margin: const EdgeInsets.only(bottom: Sp.base),
@@ -282,20 +345,17 @@ class _LinkedReportsTab extends StatelessWidget {
               Expanded(
                 child: RichText(
                   text: TextSpan(
-                    style: DefaultTextStyle.of(
-                      context,
-                    ).style.copyWith(fontSize: 12),
+                    style: DefaultTextStyle.of(context).style.copyWith(fontSize: 12),
                     children: [
                       TextSpan(
-                        text: '${_mockLinkedReports.length} reports ',
+                        text: '${linkedReports.length} reports ',
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF6366F1),
                         ),
                       ),
                       const TextSpan(
-                        text:
-                            'were merged into this incident by the AI deduplication system. Duplicate reports are marked below.',
+                        text: 'are linked to this incident in Firestore.',
                         style: TextStyle(color: Color(0xFF4338CA)),
                       ),
                     ],
@@ -305,14 +365,22 @@ class _LinkedReportsTab extends StatelessWidget {
             ],
           ),
         ),
-
-        ..._mockLinkedReports.asMap().entries.map(
-          (entry) => _LinkedReportCard(
-            index: entry.key + 1,
-            report: entry.value,
-            onTap: () {},
-          ),
-        ),
+        if (linkedReports.isEmpty)
+          const EmptyStateWidget(
+            icon: Icons.description_outlined,
+            title: 'No linked reports',
+            message: 'Reports linked to this incident will appear here.',
+          )
+        else
+          ...linkedReports.asMap().entries.map(
+                (entry) => _LinkedReportCard(
+                  index: entry.key + 1,
+                  report: entry.value,
+                  onTap: () => context.push(
+                    AppRoutes.adminReportPath(entry.value.id),
+                  ),
+                ),
+              ),
       ],
     );
   }
@@ -320,7 +388,7 @@ class _LinkedReportsTab extends StatelessWidget {
 
 class _LinkedReportCard extends StatelessWidget {
   final int index;
-  final dynamic report;
+  final ReportModel report;
   final VoidCallback onTap;
 
   const _LinkedReportCard({
@@ -377,7 +445,7 @@ class _LinkedReportCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: Sp.sm),
-                  StatusBadge(status: report.status, compact: true),
+                  StatusBadge(status: report.status.name, compact: true),
                 ],
               ),
               const SizedBox(height: Sp.xs),
@@ -402,7 +470,7 @@ class _LinkedReportCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 3),
                         Text(
-                          report.submittedBy,
+                          report.submittedByName,
                           style: theme.textTheme.labelSmall,
                         ),
                         const SizedBox(width: Sp.sm),
@@ -452,13 +520,35 @@ class _LinkedReportCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TIMELINE TAB
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _TimelineTab extends StatelessWidget {
+  final IncidentModel incident;
+  final List<ReportModel> linkedReports;
+
+  const _TimelineTab({required this.incident, required this.linkedReports});
+
   @override
   Widget build(BuildContext context) {
+    final timelineItems = <StatusTimelineItem>[
+      StatusTimelineItem(
+        status: _statusLabel(incident.status),
+        remark: 'Incident record updated in Firestore.',
+        timeAgo: _timeAgo(incident.updatedAt),
+        author: 'Admin',
+      ),
+      ...linkedReports
+          .expand(
+            (report) => report.remarks.map(
+              (remark) => StatusTimelineItem(
+                status: remark.status,
+                remark: remark.remark,
+                timeAgo: _timeAgo(remark.updatedAt),
+                author: report.submittedByName,
+              ),
+            ),
+          )
+          .toList(),
+    ];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(Sp.base),
       child: Column(
@@ -468,29 +558,18 @@ class _TimelineTab extends StatelessWidget {
             title: 'Status Timeline',
             subtitle: 'All updates merged chronologically',
           ),
-          StatusTimelineWidget(
-            items: _mockTimeline
-                .map(
-                  (r) => StatusTimelineItem(
-                    status: r.status,
-                    remark: r.remark,
-                    timeAgo: r.timeAgo,
-                    author: r.author,
-                  ),
-                )
-                .toList(),
-          ),
+          StatusTimelineWidget(items: timelineItems),
         ],
       ),
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ADMIN ACTION BAR
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _AdminActionBar extends StatelessWidget {
+  final VoidCallback onUpdateStatus;
+
+  const _AdminActionBar({required this.onUpdateStatus});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -512,16 +591,16 @@ class _AdminActionBar extends StatelessWidget {
         children: [
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: () => _showAddRemarkSheet(context),
+              onPressed: () {},
               icon: const Icon(Icons.comment_rounded, size: 16),
-              label: const Text('Add Remark'),
+              label: const Text('Remarks'),
             ),
           ),
           const SizedBox(width: Sp.sm),
           Expanded(
             flex: 2,
             child: FilledButton.icon(
-              onPressed: () => _showStatusUpdateSheet(context),
+              onPressed: onUpdateStatus,
               icon: const Icon(Icons.update_rounded, size: 16),
               label: const Text('Update Status'),
             ),
@@ -530,403 +609,23 @@ class _AdminActionBar extends StatelessWidget {
       ),
     );
   }
+}
 
-  void _showAddRemarkSheet(BuildContext context) {
-    final theme = Theme.of(context);
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.xl)),
-      ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          Sp.base,
-          Sp.base,
-          Sp.base,
-          Sp.base + MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: Sp.base),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.outlineVariant,
-                  borderRadius: Radii.chip,
-                ),
-              ),
-            ),
-            Text('Add Remark', style: theme.textTheme.titleMedium),
-            const SizedBox(height: Sp.md),
-            TextField(
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Describe the action taken or update...',
-                border: OutlineInputBorder(borderRadius: Radii.card),
-              ),
-            ),
-            const SizedBox(height: Sp.md),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Submit Remark'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showStatusUpdateSheet(BuildContext context) {
-    final statuses = [
-      (
-        'pending',
-        'Pending',
-        StatusColors.pending,
-        Icons.hourglass_empty_rounded,
-      ),
-      (
-        'underReview',
-        'Under Review',
-        StatusColors.underReview,
-        Icons.manage_search_rounded,
-      ),
-      (
-        'inProgress',
-        'In Progress',
-        StatusColors.inProgress,
-        Icons.construction_rounded,
-      ),
-      (
-        'resolved',
-        'Resolved',
-        StatusColors.resolved,
-        Icons.check_circle_rounded,
-      ),
-      ('rejected', 'Rejected', StatusColors.rejected, Icons.cancel_rounded),
-    ];
-
-    ActionBottomSheet.show(
-      context,
-      title: 'Update Incident Status',
-      actions: statuses
-          .map(
-            (s) => BottomSheetAction(
-              label: s.$2,
-              icon: s.$4,
-              color: s.$3,
-              onTap: () {},
-            ),
-          )
-          .toList(),
-    );
+String _statusLabel(IncidentStatus status) {
+  switch (status) {
+    case IncidentStatus.active:
+      return 'inProgress';
+    case IncidentStatus.monitoring:
+      return 'underReview';
+    case IncidentStatus.resolved:
+      return 'resolved';
   }
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// ADMIN REPORT DETAIL SCREEN
-// ═════════════════════════════════════════════════════════════════════════════
-
-// lib/features/report/admin/screens/admin_report_detail_screen.dart
-
-class AdminReportDetailScreen extends StatelessWidget {
-  final dynamic report; // ReportModel from router
-
-  const AdminReportDetailScreen({super.key, required this.report});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            title: const Text(
-              'Report Detail',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-            pinned: true,
-            actions: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.open_in_new_rounded),
-              ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(Sp.base),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Status + Category row ──
-                  Row(
-                    children: [
-                      const CategoryChip(category: 'Infrastructure'),
-                      const SizedBox(width: Sp.sm),
-                      const StatusBadge(status: 'inProgress'),
-                      const SizedBox(width: Sp.sm),
-                      const PriorityBadge(priority: 'High'),
-                    ],
-                  ),
-                  const SizedBox(height: Sp.md),
-
-                  // ── Title ──
-                  const Text(
-                    'Large pothole near Mabini corner',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: Sp.sm),
-
-                  // ── Submitter info ──
-                  _InfoRow(icon: Icons.person_rounded, text: 'Juan dela Cruz'),
-                  const SizedBox(height: Sp.xs),
-                  _InfoRow(
-                    icon: Icons.location_on_rounded,
-                    text: '23 Mabini Street, Marulete',
-                  ),
-                  const SizedBox(height: Sp.xs),
-                  _InfoRow(
-                    icon: Icons.access_time_rounded,
-                    text: 'Submitted May 20, 2026',
-                  ),
-
-                  // ── Linked Incident pill ──
-                  const SizedBox(height: Sp.sm),
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Sp.md,
-                        vertical: Sp.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF2FF),
-                        borderRadius: Radii.chip,
-                        border: Border.all(
-                          color: const Color(0xFF6366F1).withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.link_rounded,
-                            size: 14,
-                            color: Color(0xFF6366F1),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'Linked to: Damaged Road on Mabini Street',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF6366F1),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            size: 14,
-                            color: Color(0xFF6366F1),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: Sp.xl),
-
-                  // ── Image ──
-                  ClipRRect(
-                    borderRadius: Radii.card,
-                    child: Container(
-                      height: 180,
-                      width: double.infinity,
-                      color: theme.colorScheme.surfaceContainerLow,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.add_photo_alternate_outlined,
-                              size: 40,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: Sp.sm),
-                            Text(
-                              'No image attached',
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: Sp.xl),
-
-                  // ── Description ──
-                  const SectionHeader(title: 'Description'),
-                  Text(
-                    'There is a very large pothole in front of the store at 23 Mabini Street. '
-                    'It is causing accidents — two motorcyclists have already fallen. '
-                    'The pothole has been there for over 3 weeks and is getting worse with the rain.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: Sp.xl),
-
-                  // ── AI Analysis ──
-                  const SectionHeader(
-                    title: 'AI Analysis',
-                    subtitle: 'Automatically classified and prioritized',
-                  ),
-                  const AIAnalysisPanel(
-                    predictedCategory: 'Infrastructure',
-                    priority: 'High',
-                    confidence: 0.91,
-                    tags: ['pothole', 'road', 'hazard', 'accident'],
-                    incidentSummary:
-                        'Report describes severe road damage posing immediate safety risks. Classifying as Infrastructure — High priority based on safety impact and duration.',
-                  ),
-                  const SizedBox(height: Sp.xl),
-
-                  // ── Admin Status Controls ──
-                  const SectionHeader(title: 'Admin Controls'),
-                  _AdminStatusDropdown(),
-                  const SizedBox(height: Sp.xxxl),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _ReportAdminActionBar(),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _InfoRow({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
-        const SizedBox(width: 6),
-        Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
-      ],
-    );
-  }
-}
-
-class _AdminStatusDropdown extends StatefulWidget {
-  @override
-  State<_AdminStatusDropdown> createState() => _AdminStatusDropdownState();
-}
-
-class _AdminStatusDropdownState extends State<_AdminStatusDropdown> {
-  String _selected = 'inProgress';
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(Sp.base),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: Radii.card,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Update Status', style: theme.textTheme.titleSmall),
-          const SizedBox(height: Sp.sm),
-          DropdownButtonFormField<String>(
-            value: _selected,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(borderRadius: Radii.button),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: Sp.md,
-                vertical: Sp.sm,
-              ),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'pending', child: Text('Pending')),
-              DropdownMenuItem(
-                value: 'underReview',
-                child: Text('Under Review'),
-              ),
-              DropdownMenuItem(value: 'inProgress', child: Text('In Progress')),
-              DropdownMenuItem(value: 'resolved', child: Text('Resolved')),
-              DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
-            ],
-            onChanged: (v) => setState(() => _selected = v!),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReportAdminActionBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        Sp.base,
-        Sp.sm,
-        Sp.base,
-        Sp.sm + MediaQuery.of(context).padding.bottom,
-      ),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        border: Border(
-          top: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
-        boxShadow: AppShadows.elevated,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.flag_rounded, size: 16),
-              label: const Text('Flag'),
-            ),
-          ),
-          const SizedBox(width: Sp.sm),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.comment_rounded, size: 16),
-              label: const Text('Remark'),
-            ),
-          ),
-          const SizedBox(width: Sp.sm),
-          Expanded(
-            child: FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.check_rounded, size: 16),
-              label: const Text('Resolve'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+String _timeAgo(DateTime dateTime) {
+  final diff = DateTime.now().difference(dateTime);
+  if (diff.inMinutes < 1) return 'just now';
+  if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+  if (diff.inDays < 1) return '${diff.inHours}h ago';
+  return '${diff.inDays}d ago';
 }

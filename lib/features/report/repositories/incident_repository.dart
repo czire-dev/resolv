@@ -42,7 +42,10 @@ class IncidentRepository {
     required String incidentId,
     required IncidentStatus newStatus,
   }) async {
-    return _service.updateIncident(incidentId, {'status': newStatus.name});
+    return _service.updateIncident(incidentId, {
+      'status': newStatus.name,
+      'updatedAt': DateTime.now(),
+    });
   }
 
   /// Create a new incident.

@@ -4,7 +4,6 @@ import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/core/utils/result.dart';
 import 'package:resolv/models/incident_model.dart';
 import 'package:resolv/models/report_model.dart';
-import 'package:resolv/services/ai/duplicate_check_result.dart';
 import 'package:resolv/services/incident_service.dart';
 import 'package:resolv/services/report_service.dart';
 import 'package:resolv/features/report/repositories/ai_repository.dart';
