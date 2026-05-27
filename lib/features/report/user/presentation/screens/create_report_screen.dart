@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:resolv/features/report/providers/ai_providers.dart';
 import 'package:resolv/features/report/user/presentation/controllers/report_controller.dart';
 import 'package:resolv/features/report/providers/user_report_providers.dart' as report_providers;
@@ -35,6 +36,7 @@ class CreateReportScreen extends ConsumerWidget {
     final reportController = ref.watch(reportControllerProvider);
     final colors = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final role = ref.watch(authControllerProvider).value!.role;
 
     return Scaffold(
       backgroundColor: colors.surface,
@@ -44,7 +46,7 @@ class CreateReportScreen extends ConsumerWidget {
         scrolledUnderElevation: 1,
         shadowColor: colors.shadow.withOpacity(0.08),
         surfaceTintColor: colors.surface,
-        leading: _BackButton(onTap: onBack ?? () => context.go(AppRoutes.userReports)),
+        leading: _BackButton(onTap: onBack ?? () => context.go(AppRoutes.homeForRole(role))),
         title: Text('New Report', style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
       ),
       body: GestureDetector(

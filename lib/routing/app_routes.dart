@@ -20,14 +20,17 @@ abstract final class AppRoutes {
   static const String userReportDetail = '/user/reports/:id';
   static const String createReport = '/user/create-report';
   static const String userHome = '/home';
+  static const String userIncidents = '/incidents';
+  static String userIncidentDetail(String incidentId) => '/incidents/$incidentId';
 
   // ── Admin ─────────────────────────────────────────────
   static const String adminReports = '/admin/reports';
   static const String adminReportDetail = '/admin/reports/:reportId';
   static const String adminIncidents = '/admin/incidents';
 
-  static String adminIncidentDetail(String incidentId) =>
-      '/admin/incidents/$incidentId';
+  static String adminIncidentDetail(String incidentId) => '/admin/incidents/$incidentId';
+
+  static const String workInProgress = '/work-in-progress';
 
   // ── Helpers: build concrete paths with parameters ─────
 

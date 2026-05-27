@@ -81,38 +81,51 @@ class _AdminIncidentDetailScreenState
 
             return Scaffold(
               backgroundColor: Theme.of(context).colorScheme.surface,
-              body: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  SliverAppBar(
-                    pinned: true,
-                    expandedHeight: 180,
-                    forceElevated: innerBoxIsScrolled,
-                    actions: [
-                      IconButton(
-                        onPressed: () => _showAdminActions(context, incident),
-                        icon: const Icon(Icons.more_vert_rounded),
+              body: SafeArea(
+                top: false,
+                child: NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                    SliverAppBar(
+                      pinned: true,
+                      expandedHeight: 180,
+                      forceElevated: innerBoxIsScrolled,
+                      actions: [
+                        IconButton(
+                          onPressed: () => _showAdminActions(context, incident),
+                          icon: const Icon(Icons.more_vert_rounded),
+                        ),
+                      ],
+                      flexibleSpace: FlexibleSpaceBar(
+                        background: _IncidentHeroHeader(incident: incident),
+                      ),
+                      bottom: TabBar(
+                        controller: _tabController,
+                        tabs: [
+                          const Tab(text: 'Overview'),
+                          Tab(text: 'Reports (${linkedReports.length})'),
+                          const Tab(text: 'Timeline'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  body: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Ensure each tab accounts for bottom action bar spacing
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 88 + MediaQuery.of(context).padding.bottom),
+                        child: _OverviewTab(incident: incident, linkedReports: linkedReports),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 88 + MediaQuery.of(context).padding.bottom),
+                        child: _LinkedReportsTab(linkedReports: linkedReports),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 88 + MediaQuery.of(context).padding.bottom),
+                        child: _TimelineTab(incident: incident, linkedReports: linkedReports),
                       ),
                     ],
-                    flexibleSpace: FlexibleSpaceBar(
-                      background: _IncidentHeroHeader(incident: incident),
-                    ),
-                    bottom: TabBar(
-                      controller: _tabController,
-                      tabs: [
-                        const Tab(text: 'Overview'),
-                        Tab(text: 'Reports (${linkedReports.length})'),
-                        const Tab(text: 'Timeline'),
-                      ],
-                    ),
                   ),
-                ],
-                body: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _OverviewTab(incident: incident, linkedReports: linkedReports),
-                    _LinkedReportsTab(linkedReports: linkedReports),
-                    _TimelineTab(incident: incident, linkedReports: linkedReports),
-                  ],
                 ),
               ),
               bottomNavigationBar: _AdminActionBar(
@@ -233,7 +246,7 @@ class _IncidentHeroHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.fromLTRB(Sp.base, 80, Sp.base, Sp.base),
+      padding: const EdgeInsets.fromLTRB(Sp.base, 56, Sp.base, Sp.base),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         border: Border(
@@ -259,7 +272,8 @@ class _IncidentHeroHeader extends StatelessWidget {
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
-            maxLines: 2,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: Sp.xs),
           StatusBadge(status: _statusLabel(incident.status), compact: true),

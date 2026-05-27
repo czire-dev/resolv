@@ -273,44 +273,46 @@ class StatusTimelineWidget extends StatelessWidget {
       children: List.generate(items.length, (i) {
         final item = items[i];
         final isLast = i == items.length - 1;
-        return IntrinsicHeight(
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: isLast ? 0 : Sp.base),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Timeline line + dot
+              // Timeline line + dot (left column)
               SizedBox(
-                width: 32,
+                width: 36,
                 child: Column(
                   children: [
                     _TimelineDot(status: item.status, isFirst: i == 0),
                     if (!isLast)
-                      Expanded(
-                        child: Container(
-                          width: 2,
-                          color: theme.colorScheme.outlineVariant,
-                        ),
+                      Container(
+                        margin: const EdgeInsets.only(top: Sp.xs),
+                        height: 28,
+                        width: 2,
+                        color: theme.colorScheme.outlineVariant,
                       ),
                   ],
                 ),
               ),
+
               const SizedBox(width: Sp.sm),
+
+              // Content (right)
               Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: isLast ? 0 : Sp.base),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      StatusBadge(status: item.status, compact: true),
-                      const SizedBox(height: Sp.xs),
-                      if (item.remark.isNotEmpty)
-                        Text(item.remark, style: theme.textTheme.bodySmall),
-                      const SizedBox(height: Sp.xs),
-                      Text(
-                        '${item.author} · ${item.timeAgo}',
-                        style: theme.textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    StatusBadge(status: item.status, compact: true),
+                    const SizedBox(height: Sp.xs),
+                    if (item.remark.isNotEmpty)
+                      Text(item.remark, style: theme.textTheme.bodySmall),
+                    const SizedBox(height: Sp.xs),
+                    Text(
+                      '${item.author} · ${item.timeAgo}',
+                      style: theme.textTheme.labelSmall,
+                    ),
+                  ],
                 ),
               ),
             ],

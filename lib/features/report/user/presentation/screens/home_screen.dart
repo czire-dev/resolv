@@ -507,7 +507,12 @@ class _RecentIncidentsSection extends ConsumerWidget {
           SectionHeader(
             title: 'Recent Incidents',
             subtitle: 'Grouped from community reports',
-            action: TextButton(onPressed: () {}, child: const Text('See all')),
+            action: TextButton(
+              onPressed: () {
+                context.go(AppRoutes.userIncidents);
+              },
+              child: const Text('See all'),
+            ),
           ),
           incidentsAsync.when(
             loading: () => Padding(
@@ -550,7 +555,9 @@ class _RecentIncidentsSection extends ConsumerWidget {
                         lastUpdated: _formatTime(incident.updatedAt),
                         aiGenerated: incident.aiGenerated,
                         tags: incident.tags,
-                        onTap: () {},
+                        onTap: () {
+                          context.go(AppRoutes.userIncidentDetail(incident.id));
+                        },
                       ),
                     )
                     .toList(),
