@@ -42,10 +42,12 @@ class IncidentRepository {
     required String incidentId,
     required IncidentStatus newStatus,
   }) async {
-    return _service.updateIncident(incidentId, {
-      'status': newStatus.name,
-      'updatedAt': DateTime.now(),
-    });
+    // Delegate to service-level status synchronizer which updates the incident
+    // and performs batch updates on linked reports.
+    return _service.updateIncidentStatus(
+      incidentId: incidentId,
+      newStatus: newStatus,
+    );
   }
 
   /// Create a new incident.

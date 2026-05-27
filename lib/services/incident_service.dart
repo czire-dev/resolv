@@ -4,9 +4,25 @@ import 'package:resolv/models/incident_model.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/core/enums/incident_enums.dart';
 
+ReportStatus mapIncidentToReportStatus(IncidentStatus incidentStatus) {
+  switch (incidentStatus) {
+    case IncidentStatus.active:
+      return ReportStatus.pending;
+    case IncidentStatus.monitoring:
+      return ReportStatus.inProgress;
+    case IncidentStatus.resolved:
+      return ReportStatus.resolved;
+  }
+}
+
+bool shouldPreserveReportStatus(ReportStatus currentStatus) {
+  return currentStatus == ReportStatus.rejected;
+}
+
 class IncidentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static const String _incidentsCollection = 'incidents';
+  static const String _reportsCollection = 'reports';
 
   // create
   Future<Result<IncidentModel>> createIncident(
@@ -69,6 +85,81 @@ class IncidentService {
       );
     } catch (e) {
       return Result.failure(Failure('An unexpected error occurred'));
+    }
+  }
+
+  /// Update an incident's status and synchronize linked report statuses.
+  /// This will update the incident document and batch-update all reports
+  /// where `report.incidentId == incidentId`, mapping incident status
+  /// to the corresponding report status. Rejected reports are preserved.
+  Future<Result<void>> updateIncidentStatus({
+    required String incidentId,
+    required IncidentStatus newStatus,
+  }) async {
+    try {
+      print('[IncidentSync] Updating incident $incidentId -> ${newStatus.name}');
+      final mappedStatus = mapIncidentToReportStatus(newStatus);
+
+      final incidentRef = _firestore.collection(_incidentsCollection).doc(incidentId);
+      final incidentSnapshot = await incidentRef.get();
+      if (!incidentSnapshot.exists) {
+        return Result.failure(Failure('Incident not found'));
+      }
+
+      final reportsQuery = _firestore
+          .collection(_reportsCollection)
+          .where('incidentId', isEqualTo: incidentId);
+      final reportsSnap = await reportsQuery.get();
+
+      print('[IncidentSync] Found ${reportsSnap.docs.length} linked reports for $incidentId');
+
+      final batch = _firestore.batch();
+      batch.update(incidentRef, {
+        'status': newStatus.name,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      int updatedCount = 0;
+      int skippedRejected = 0;
+
+      for (final doc in reportsSnap.docs) {
+        final data = doc.data();
+        final currentStatusStr = (data['status'] as String?) ?? '';
+        final currentStatus = ReportStatusX.fromString(currentStatusStr);
+
+        if (shouldPreserveReportStatus(currentStatus)) {
+          skippedRejected++;
+          print('[ReportSync] Skipping rejected report ${doc.id}');
+          continue;
+        }
+
+        if (currentStatus == mappedStatus) {
+          print('[ReportSync] Report ${doc.id} already synced as ${mappedStatus.value}');
+          continue;
+        }
+
+        batch.update(doc.reference, {
+          'status': mappedStatus.value,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        updatedCount++;
+        print('[ReportSync] Queued update for report ${doc.id} -> ${mappedStatus.value}');
+      }
+
+      await batch.commit();
+
+      print(
+        '[IncidentSync] Batch committed successfully for $incidentId -> ${newStatus.name}. reportsUpdated=$updatedCount, skippedRejected=$skippedRejected',
+      );
+      return Result.success(null);
+    } on FirebaseException catch (e) {
+      print('[IncidentSync] FirebaseException: ${e.message}');
+      return Result.failure(
+        Failure(e.message ?? 'Failed to update incident status', code: e.code),
+      );
+    } catch (e) {
+      print('[IncidentSync] Exception: $e');
+      return Result.failure(Failure('An unexpected error occurred during status sync'));
     }
   }
 

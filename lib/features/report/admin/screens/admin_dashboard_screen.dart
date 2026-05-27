@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/core/themes/ui_constants.dart';
+import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:resolv/features/report/admin/widgets/admin_report_card.dart';
 import 'package:resolv/features/report/providers/ai_providers.dart';
 import 'package:resolv/models/incident_model.dart';
@@ -79,10 +80,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   }
 }
 
-class _AdminHeader extends StatelessWidget {
+class _AdminHeader extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final user = ref.watch(authControllerProvider).value;
     return Padding(
       padding: const EdgeInsets.fromLTRB(Sp.base, Sp.base, Sp.base, Sp.md),
       child: Row(
@@ -136,7 +138,7 @@ class _AdminHeader extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Text('Admin Reyes', style: theme.textTheme.labelSmall),
+                  Text(user?.displayName ?? 'Admin User', style: theme.textTheme.labelSmall),
                 ],
               ),
             ],
