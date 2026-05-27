@@ -1,6 +1,7 @@
 ﻿import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:resolv/core/utils/result.dart';
@@ -16,7 +17,7 @@ class HuggingFaceConfig {
   final Duration retryDelay;
 
   const HuggingFaceConfig({
-    this.model = 'mistralai/Mistral-7B-Instruct-v0.2',
+    this.model = 'microsoft/Phi-3-mini-4k-instruct',
     this.baseUrl = 'https://api-inference.huggingface.co/models',
     this.timeout = const Duration(seconds: 20),
     this.maxTokens = 256,
@@ -35,30 +36,61 @@ class HuggingFaceClient {
   final http.Client _httpClient;
   final String? _apiKey;
 
-  HuggingFaceClient({HuggingFaceConfig? config, String? apiKey, http.Client? httpClient})
-    : config = config ?? const HuggingFaceConfig(),
-      _apiKey = apiKey ?? _loadApiKey(),
-      _httpClient = httpClient ?? http.Client();
+  HuggingFaceClient({
+    HuggingFaceConfig? config,
+    String? apiKey,
+    http.Client? httpClient,
+  }) : config = config ?? const HuggingFaceConfig(),
+       _apiKey = apiKey ?? _loadApiKey(),
+       _httpClient = httpClient ?? http.Client();
 
   static String? _loadApiKey() {
-    final loadedKey = dotenv.env['HUGGINGFACE_API_KEY'];
-    if (loadedKey != null && loadedKey.isNotEmpty) {
-      return loadedKey;
+    try {
+      final loadedKey = dotenv.env['HUGGINGFACE_API_KEY'];
+      if (loadedKey != null && loadedKey.isNotEmpty) {
+        debugPrint(
+          '[HuggingFaceClient] API key loaded from dotenv (${loadedKey.length} chars)',
+        );
+        return loadedKey;
+      }
+    } on NotInitializedError {
+      debugPrint(
+        '[HuggingFaceClient] dotenv not initialized, trying dart-define',
+      );
     }
 
-    const dartDefineKey = String.fromEnvironment('HUGGINGFACE_API_KEY', defaultValue: '');
-    return dartDefineKey.isNotEmpty ? dartDefineKey : null;
+    const dartDefineKey = String.fromEnvironment(
+      'HUGGINGFACE_API_KEY',
+      defaultValue: '',
+    );
+    if (dartDefineKey.isNotEmpty) {
+      debugPrint(
+        '[HuggingFaceClient] API key loaded from dart-define (${dartDefineKey.length} chars)',
+      );
+      return dartDefineKey;
+    }
+
+    debugPrint(
+      '[HuggingFaceClient] ⚠️ No API key found in dotenv or dart-define',
+    );
+    return null;
   }
 
   /// Sends a prompt to the Hugging Face inference API and returns sanitized text.
   Future<Result<String>> generateText(String prompt) async {
     final apiKey = _apiKey;
     if (apiKey == null || apiKey.isEmpty) {
+      debugPrint('[HuggingFaceClient] ❌ Missing Hugging Face API key');
       return Result.failure(
-        Failure('Missing Hugging Face API key. Set HUGGINGFACE_API_KEY in environment variables.'),
+        Failure(
+          'Missing Hugging Face API key. Set HUGGINGFACE_API_KEY in environment variables.',
+        ),
       );
     }
 
+    debugPrint(
+      '[HuggingFaceClient] ✓ API key found (${apiKey.length} chars), sending request',
+    );
     print('[HuggingFaceClient] Sending prompt to ${config.endpoint}');
     print('[HuggingFaceClient] Prompt length: ${prompt.length}');
 
@@ -79,7 +111,10 @@ class HuggingFaceClient {
         final response = await _httpClient
             .post(
               Uri.parse(config.endpoint),
-              headers: {'Authorization': 'Bearer $apiKey', 'Content-Type': 'application/json'},
+              headers: {
+                'Authorization': 'Bearer $apiKey',
+                'Content-Type': 'application/json',
+              },
               body: requestBody,
             )
             .timeout(config.timeout);
@@ -104,7 +139,9 @@ class HuggingFaceClient {
         }
 
         return Result.failure(
-          Failure('Hugging Face inference failed (${response.statusCode}): ${response.body}'),
+          Failure(
+            'Hugging Face inference failed (${response.statusCode}): ${response.body}',
+          ),
         );
       } on TimeoutException catch (e) {
         print('[HuggingFaceClient] API request timed out: $e');
@@ -123,7 +160,9 @@ class HuggingFaceClient {
       }
     }
 
-    return Result.failure(Failure('Hugging Face inference failed after retries.'));
+    return Result.failure(
+      Failure('Hugging Face inference failed after retries.'),
+    );
   }
 
   static String _sanitizeText(String raw) {
@@ -149,7 +188,8 @@ class HuggingFaceClient {
         return parsed;
       }
       if (parsed is Map<String, dynamic>) {
-        if (parsed.containsKey('generated_text') && parsed['generated_text'] is String) {
+        if (parsed.containsKey('generated_text') &&
+            parsed['generated_text'] is String) {
           return parsed['generated_text'] as String;
         }
         if (parsed.containsKey('error') && parsed['error'] is String) {
@@ -158,7 +198,8 @@ class HuggingFaceClient {
       }
       if (parsed is List && parsed.isNotEmpty) {
         final first = parsed.first;
-        if (first is Map<String, dynamic> && first['generated_text'] is String) {
+        if (first is Map<String, dynamic> &&
+            first['generated_text'] is String) {
           return first['generated_text'] as String;
         }
         if (first is String) {

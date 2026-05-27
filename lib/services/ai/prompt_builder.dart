@@ -13,7 +13,7 @@ REPORT DESCRIPTION: $reportDescription
 
 Classify this report by providing a JSON response with the following structure:
 {
-  "predictedCategory": "one of: infrastructure, public_safety, sanitation, traffic, utilities, health, education, parks, other",
+  "predictedCategory": "one of: infrastructure, public_safety, sanitation, noise_complaint, flooding, street_light, other",
   "priority": "one of: low, medium, high, critical",
   "tags": ["tag1", "tag2", "tag3"],
   "incidentSummary": "A brief 1-2 sentence summary of the incident",

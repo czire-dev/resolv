@@ -1,5 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:resolv/core/themes/app_theme.dart';
 import 'package:resolv/firebase_options.dart';
@@ -7,6 +9,18 @@ import 'package:resolv/routing/app_router.dart' as AppRouter;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await dotenv.load(fileName: '.env');
+    debugPrint('[main] .env loaded successfully');
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    debugPrint(
+      '[main] GEMINI_API_KEY loaded: ${apiKey != null ? 'present (${apiKey.length} chars)' : 'missing'}',
+    );
+  } catch (e) {
+    // `.env` may not exist or is inaccessible; fallback to compile-time environment.
+    debugPrint('[main] .env load failed: $e');
+  }
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -100,7 +114,10 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: .center,
           children: [
             const Text('You have pushed the button this many times:'),
-            Text('$_counter', style: Theme.of(context).textTheme.headlineMedium),
+            Text(
+              '$_counter',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
           ],
         ),
       ),
