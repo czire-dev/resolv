@@ -4,7 +4,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/core/themes/ui_constants.dart';
+import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:resolv/features/report/providers/ai_providers.dart';
 import 'package:resolv/features/report/providers/incident_providers.dart';
 import 'package:resolv/routing/app_routes.dart';
 import 'package:resolv/shared/widgets/cards.dart';
@@ -405,49 +408,160 @@ class _QuickActionTile extends StatelessWidget {
 // MY REPORT STATUS
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _MyReportStatusSection extends StatelessWidget {
+class _MyReportStatusSection extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(Sp.base, Sp.xl, Sp.base, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeader(
-            title: 'My Report Summary',
-            action: TextButton(onPressed: () {}, child: const Text('View all')),
-          ),
-          Row(
+    final authState = ref.watch(authControllerProvider);
+
+    return authState.when(
+      loading: () => Padding(
+        padding: const EdgeInsets.fromLTRB(Sp.base, Sp.xl, Sp.base, 0),
+        child: SizedBox(
+          height: 180,
+          child: Center(child: CircularProgressIndicator(color: theme.colorScheme.primary)),
+        ),
+      ),
+      error: (error, _) => Padding(
+        padding: const EdgeInsets.fromLTRB(Sp.base, Sp.xl, Sp.base, 0),
+        child: Text('Unable to load report summary: $error'),
+      ),
+      data: (user) {
+        if (user == null) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(Sp.base, Sp.xl, Sp.base, 0),
+            child: const Text('Sign in to see your report summary.'),
+          );
+        }
+
+        final reportsAsync = ref.watch(userReportsStreamProvider(user.id));
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(Sp.base, Sp.xl, Sp.base, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _StatusCountTile(
-                  count: 2,
-                  label: 'Pending',
-                  color: StatusColors.pending,
-                  bg: StatusColors.pendingBg,
+              SectionHeader(
+                title: 'My Report Summary',
+                action: TextButton(
+                  onPressed: () => context.go(AppRoutes.userReports),
+                  child: const Text('View all'),
                 ),
               ),
-              const SizedBox(width: Sp.sm),
-              Expanded(
-                child: _StatusCountTile(
-                  count: 1,
-                  label: 'In Progress',
-                  color: StatusColors.inProgress,
-                  bg: StatusColors.inProgressBg,
+              reportsAsync.when(
+                loading: () => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: Sp.lg),
+                  child: Center(child: CircularProgressIndicator(color: theme.colorScheme.primary)),
                 ),
-              ),
-              const SizedBox(width: Sp.sm),
-              Expanded(
-                child: _StatusCountTile(
-                  count: 5,
-                  label: 'Resolved',
-                  color: StatusColors.resolved,
-                  bg: StatusColors.resolvedBg,
+                error: (error, _) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: Sp.lg),
+                  child: Text('Unable to load your reports: $error'),
                 ),
+                data: (reports) {
+                  final totalReports = reports.length;
+                  final pendingCount = reports.where((r) => r.status == ReportStatus.pending).length;
+                  final inProgressCount = reports.where((r) => r.status == ReportStatus.inProgress).length;
+                  final resolvedCount = reports.where((r) => r.status == ReportStatus.resolved).length;
+                  final latestReport = reports.isNotEmpty ? reports.first.submittedAt : null;
+                  final linkedIncidentsCount = reports
+                      .where((r) => r.incidentId.isNotEmpty)
+                      .map((r) => r.incidentId)
+                      .toSet()
+                      .length;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatusCountTile(
+                              count: pendingCount,
+                              label: 'Pending',
+                              color: StatusColors.pending,
+                              bg: StatusColors.pendingBg,
+                            ),
+                          ),
+                          const SizedBox(width: Sp.sm),
+                          Expanded(
+                            child: _StatusCountTile(
+                              count: inProgressCount,
+                              label: 'In Progress',
+                              color: StatusColors.inProgress,
+                              bg: StatusColors.inProgressBg,
+                            ),
+                          ),
+                          const SizedBox(width: Sp.sm),
+                          Expanded(
+                            child: _StatusCountTile(
+                              count: resolvedCount,
+                              label: 'Resolved',
+                              color: StatusColors.resolved,
+                              bg: StatusColors.resolvedBg,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: Sp.sm),
+                      Wrap(
+                        spacing: Sp.sm,
+                        runSpacing: Sp.sm,
+                        children: [
+                          _SmallMetricTile(
+                            label: 'Total reports',
+                            value: '$totalReports',
+                          ),
+                          _SmallMetricTile(
+                            label: 'Linked incidents',
+                            value: '$linkedIncidentsCount',
+                          ),
+                          _SmallMetricTile(
+                            label: 'Latest report',
+                            value: latestReport != null
+                                ? _formatDate(latestReport)
+                                : 'No reports yet',
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+}
+
+String _formatDate(DateTime date) {
+  return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}';
+}
+
+class _SmallMetricTile extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _SmallMetricTile({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: Sp.md, vertical: Sp.sm),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant,
+        borderRadius: Radii.card,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      constraints: const BoxConstraints(minWidth: 120),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text(label, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         ],
       ),
     );

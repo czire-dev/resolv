@@ -1,10 +1,17 @@
 // lib/features/profile/presentation/screens/profile_screen.dart
 // RESOLV — Resident Profile Screen
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:resolv/core/enums/report_enums.dart';
+import 'package:resolv/core/enums/user_role.dart';
 import 'package:resolv/core/themes/ui_constants.dart';
 import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:resolv/features/report/providers/ai_providers.dart';
+import 'package:resolv/models/user_model.dart';
+import 'package:resolv/routing/app_routes.dart';
 import 'package:resolv/shared/widgets/badges.dart';
 import 'package:resolv/shared/widgets/layouts.dart';
 // ─────────────────────────────────────────────────────────────────────────────
@@ -170,6 +177,17 @@ class ProfileScreen extends ConsumerWidget {
         return Scaffold(
           backgroundColor: theme.colorScheme.surface,
           appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded),
+              onPressed: () {
+                final router = GoRouter.of(context);
+                if (router.canPop()) {
+                  router.pop();
+                } else {
+                  router.go(AppRoutes.homeForRole(user?.role ?? UserRole.user));
+                }
+              },
+            ),
             title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.w800)),
             actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert_rounded))],
           ),
@@ -179,43 +197,9 @@ class ProfileScreen extends ConsumerWidget {
               children: [
                 ProfileHeader(displayName: displayName, email: email),
                 const SizedBox(height: Sp.xl),
-
-                // ── Report Stats ──
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: Sp.base),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SectionHeader(title: 'Report Statistics'),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatTile(
-                              count: 8,
-                              label: 'Submitted',
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(width: Sp.sm),
-                          Expanded(
-                            child: _StatTile(
-                              count: 5,
-                              label: 'Resolved',
-                              color: StatusColors.resolved,
-                            ),
-                          ),
-                          const SizedBox(width: Sp.sm),
-                          Expanded(
-                            child: _StatTile(
-                              count: 2,
-                              label: 'Pending',
-                              color: StatusColors.pending,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                _ProfileStatisticsSection(
+                  user: user,
+                  creationDate: FirebaseAuth.instance.currentUser?.metadata.creationTime,
                 ),
                 const SizedBox(height: Sp.xl),
 
@@ -370,6 +354,195 @@ class _StatTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ProfileStatisticsSection extends ConsumerWidget {
+  final UserModel? user;
+  final DateTime? creationDate;
+
+  const _ProfileStatisticsSection({required this.user, required this.creationDate});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final currentUser = user;
+    if (currentUser == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Sp.base),
+        child: Text('Unable to load profile statistics.'),
+      );
+    }
+
+    final userReportsAsync = ref.watch(userReportsStreamProvider(currentUser.id));
+    final allReportsAsync = ref.watch(reportsStreamProvider);
+    final activeIncidentsAsync = ref.watch(incidentsStreamProvider((category: null, status: 'active')));
+    final monitoringIncidentsAsync = ref.watch(incidentsStreamProvider((category: null, status: 'monitoring')));
+    final usersAsync = ref.watch(usersStreamProvider);
+
+    if (currentUser.role == UserRole.admin) {
+      final isLoading = allReportsAsync.isLoading || activeIncidentsAsync.isLoading || monitoringIncidentsAsync.isLoading || usersAsync.isLoading;
+      final hasError = allReportsAsync.hasError || activeIncidentsAsync.hasError || monitoringIncidentsAsync.hasError || usersAsync.hasError;
+      if (isLoading) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(horizontal: Sp.base),
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (hasError) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Sp.base),
+          child: Text('Unable to load admin statistics.'),
+        );
+      }
+
+      final allReports = allReportsAsync.value ?? [];
+      final resolvedCount = allReports.where((r) => r.status == ReportStatus.resolved).length;
+      final aiLinkedIncidentsCount = allReports.where((r) => r.incidentId.isNotEmpty).map((r) => r.incidentId).toSet().length;
+      final totalReports = allReports.length;
+      final totalUsers = usersAsync.value?.length ?? 0;
+      final activeIncidents = activeIncidentsAsync.value?.length ?? 0;
+      final monitoringIncidents = monitoringIncidentsAsync.value?.length ?? 0;
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Sp.base),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionHeader(title: 'Report Statistics'),
+            Wrap(
+              spacing: Sp.sm,
+              runSpacing: Sp.sm,
+              children: [
+                SizedBox(
+                  width: 176,
+                  child: _StatTile(count: totalReports, label: 'Total reports', color: theme.colorScheme.primary),
+                ),
+                SizedBox(
+                  width: 176,
+                  child: _StatTile(count: activeIncidents, label: 'Active incidents', color: Colors.blueAccent),
+                ),
+                SizedBox(
+                  width: 176,
+                  child: _StatTile(count: resolvedCount, label: 'Reports resolved', color: StatusColors.resolved),
+                ),
+                SizedBox(
+                  width: 176,
+                  child: _StatTile(count: monitoringIncidents, label: 'Monitoring incidents', color: Colors.orangeAccent),
+                ),
+                SizedBox(
+                  width: 176,
+                  child: _StatTile(count: totalUsers, label: 'Total users', color: theme.colorScheme.secondary),
+                ),
+                SizedBox(
+                  width: 176,
+                  child: _StatTile(count: aiLinkedIncidentsCount, label: 'AI-linked incidents', color: Colors.teal),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    final isLoading = userReportsAsync.isLoading;
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: Sp.base),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (userReportsAsync.hasError) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Sp.base),
+        child: Text('Unable to load report statistics.'),
+      );
+    }
+
+    final reports = userReportsAsync.value ?? [];
+    final totalReports = reports.length;
+    final resolvedCount = reports.where((r) => r.status == ReportStatus.resolved).length;
+    final pendingCount = reports.where((r) => r.status == ReportStatus.pending).length;
+    final activeIncidentsCount = reports.where((r) => r.incidentId.isNotEmpty).map((r) => r.incidentId).toSet().length;
+    final latestReport = reports.isNotEmpty ? reports.first.submittedAt : null;
+    final createdAtLabel = creationDate != null ? _profileFormatDate(creationDate!) : 'Unknown';
+    final latestReportLabel = latestReport != null ? _profileFormatDate(latestReport) : 'No reports yet';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Sp.base),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'Report Statistics'),
+          Wrap(
+            spacing: Sp.sm,
+            runSpacing: Sp.sm,
+            children: [
+              SizedBox(
+                width: 176,
+                child: _StatTile(count: totalReports, label: 'Submitted', color: theme.colorScheme.primary),
+              ),
+              SizedBox(
+                width: 176,
+                child: _StatTile(count: pendingCount, label: 'Pending', color: StatusColors.pending),
+              ),
+              SizedBox(
+                width: 176,
+                child: _StatTile(count: resolvedCount, label: 'Resolved', color: StatusColors.resolved),
+              ),
+              SizedBox(
+                width: 176,
+                child: _StatTile(count: activeIncidentsCount, label: 'Active incidents', color: Colors.blueAccent),
+              ),
+            ],
+          ),
+          const SizedBox(height: Sp.md),
+          Row(
+            children: [
+              Expanded(
+                child: _ProfileDetailTile(label: 'Account created', value: createdAtLabel),
+              ),
+              const SizedBox(width: Sp.sm),
+              Expanded(
+                child: _ProfileDetailTile(label: 'Last report', value: latestReportLabel),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileDetailTile extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ProfileDetailTile({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(Sp.md),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant,
+        borderRadius: Radii.card,
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: Sp.xs),
+          Text(value, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+}
+
+String _profileFormatDate(DateTime date) {
+  return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}';
 }
 
 // ═════════════════════════════════════════════════════════════════════════════

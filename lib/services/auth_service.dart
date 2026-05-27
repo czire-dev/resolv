@@ -31,12 +31,26 @@ class AuthService {
         email: email,
         password: password,
       );
-      credential.user?.updateDisplayName(displayName);
 
-      // Create user in Firestore
-      await _userService.createUser(UserModel.fromFirebase(credential.user!));
+      await credential.user?.updateDisplayName(displayName);
+      await credential.user?.reload();
 
-      return Result.success(credential.user!);
+      final currentUser = _service.currentUser ?? credential.user!;
+      final resolvedName = currentUser.displayName?.trim().isNotEmpty == true
+          ? currentUser.displayName!
+          : displayName;
+
+      // Create user in Firestore with the final resolved displayName.
+      await _userService.createUser(
+        UserModel(
+          id: currentUser.uid,
+          displayName: resolvedName,
+          email: currentUser.email ?? email,
+          profilePictureUrl: currentUser.photoURL,
+        ),
+      );
+
+      return Result.success(currentUser);
     } on FirebaseAuthException catch (e) {
       return Result.failure(Failure(e.message ?? 'Registration failed', code: e.code));
     } catch (e) {

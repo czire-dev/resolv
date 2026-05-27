@@ -101,6 +101,14 @@ final userReportsStreamProvider = StreamProvider.family<List<ReportModel>, Strin
   );
 });
 
+/// Stream provider for all application users.
+final usersStreamProvider = StreamProvider<List<String>>((ref) {
+  final firestore = FirebaseFirestore.instance;
+  return firestore.collection('users').snapshots().map(
+        (snapshot) => snapshot.docs.map((doc) => doc.id).toList(),
+      );
+});
+
 /// Stream provider for duplicate reports (reports where isDuplicate == true).
 final duplicateReportsStreamProvider = StreamProvider<List<ReportModel>>((ref) {
   final firestore = FirebaseFirestore.instance;
