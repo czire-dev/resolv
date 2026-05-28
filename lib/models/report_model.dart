@@ -5,6 +5,12 @@ import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/models/ai_analysis_model.dart';
 import 'package:resolv/models/report_remark_model.dart';
 
+DateTime _readDateTime(Object? value, {DateTime? fallback}) {
+  if (value is Timestamp) return value.toDate();
+  if (value is DateTime) return value;
+  return fallback ?? DateTime.now();
+}
+
 class ReportModel {
   final String id;
 
@@ -53,6 +59,11 @@ class ReportModel {
 
   factory ReportModel.fromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final submittedAt = _readDateTime(data['submittedAt']);
+    final updatedAt = data['updatedAt'] != null
+        ? _readDateTime(data['updatedAt'], fallback: submittedAt)
+        : null;
+
     return ReportModel(
       id: doc.id,
       title: data['title'] as String,
@@ -65,12 +76,12 @@ class ReportModel {
         (s) => s.name == data['status'],
         orElse: () => ReportStatus.pending,
       ),
-      submittedAt: (data['submittedAt'] as Timestamp).toDate(),
+      submittedAt: submittedAt,
       submittedByName: data['submittedByName'] as String? ?? '',
       submittedByUid: data['submittedByUid'] as String? ?? '',
       address: data['address'] as String? ?? '',
       imageUrl: data['imageUrl'] as String?,
-      updatedAt: data['updatedAt'] != null ? (data['updatedAt'] as Timestamp).toDate() : null,
+      updatedAt: updatedAt,
       aiAnalysis: data['aiAnalysis'] != null
           ? AiAnalysisModel.fromJson(data['aiAnalysis'] as Map<String, dynamic>)
           : null,

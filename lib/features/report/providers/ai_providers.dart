@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/features/report/controllers/ai_controller.dart';
 import 'package:resolv/features/report/controllers/ai_notifier.dart';
 import 'package:resolv/features/report/repositories/ai_repository.dart';
@@ -87,6 +88,20 @@ final reportsStreamProvider = StreamProvider<List<ReportModel>>((ref) {
       .orderBy('submittedAt', descending: true)
       .snapshots()
       .map((snapshot) => snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList());
+});
+
+/// Stream provider for recent unresolved reports shown on the admin dashboard.
+final recentUnresolvedReportsStreamProvider = StreamProvider<List<ReportModel>>((ref) {
+  final firestore = FirebaseFirestore.instance;
+  return firestore
+      .collection('reports')
+      .orderBy('submittedAt', descending: true)
+      .limit(25)
+      .snapshots()
+      .map((snapshot) {
+        final reports = snapshot.docs.map((doc) => ReportModel.fromDoc(doc)).toList();
+        return reports.where((report) => report.status != ReportStatus.resolved).take(10).toList();
+      });
 });
 
 /// Stream provider for reports by user (real-time updates).

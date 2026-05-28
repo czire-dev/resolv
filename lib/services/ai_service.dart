@@ -82,7 +82,7 @@ class AiService {
     required String title,
     required String description,
   }) async {
-    if (_apiKey == null || _apiKey!.isEmpty) {
+    if (_apiKey == null || _apiKey.isEmpty) {
       return Result.success(_fallbackAnalysis(title));
     }
 
@@ -129,7 +129,7 @@ class AiService {
     required ReportModel report,
     required IncidentModel incident,
   }) async {
-    if (_apiKey == null || _apiKey!.isEmpty) {
+    if (_apiKey == null || _apiKey.isEmpty) {
       return Result.success(_fallbackDuplicate());
     }
 
@@ -207,7 +207,7 @@ class AiService {
   Map<String, dynamic> _parseJson(String jsonStr, {required String context}) {
     try {
       return jsonDecode(jsonStr) as Map<String, dynamic>;
-    } on FormatException catch (e) {
+    } on FormatException {
       final repaired = _repairJson(jsonStr);
       if (repaired == jsonStr) {
         rethrow;
@@ -236,8 +236,8 @@ class AiService {
       repaired = '$repaired}';
     }
 
-    final openBrackets = '\['.allMatches(repaired).length;
-    final closeBrackets = '\]'.allMatches(repaired).length;
+    final openBrackets = '['.allMatches(repaired).length;
+    final closeBrackets = ']'.allMatches(repaired).length;
     for (var i = 0; i < openBrackets - closeBrackets; i++) {
       repaired = '$repaired]';
     }

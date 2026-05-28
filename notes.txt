@@ -6,12 +6,15 @@ right away ✅
 
 FIX:
 - user creates report (success) -> view reports button no function ✅
+- when incidents' status changes instead of showing loading 
+it's showing error
 
 IMPROVE:
-- admin ui/ux
+- admin ui/ux ✅
 
 IMPLEMENT:
 - figma design
-- ai integration
+- ai integration ✅
 - repeated reports -> these reports must be classified as one 
-to reduce reports' redundancy
+to reduce reports' redundancy ✅
+- navigate to work in progress page for unimplemented features

@@ -12,6 +12,7 @@ import 'package:resolv/features/report/providers/incident_providers.dart';
 import 'package:resolv/routing/app_routes.dart';
 import 'package:resolv/shared/widgets/cards.dart';
 import 'package:resolv/shared/widgets/layouts.dart';
+import 'package:resolv/shared/screens/work_in_progress_screen.dart';
 
 const _announcements = [
   (
@@ -44,16 +45,6 @@ class HomeScreen extends ConsumerWidget {
           slivers: [
             // ── App Bar / Header ──
             SliverToBoxAdapter(child: _HomeHeader()),
-            // ── Search Bar ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(Sp.base, 0, Sp.base, Sp.base),
-                child: SearchBarWidget(
-                  hintText: 'Search reports, incidents...',
-                  onFilterTap: () {},
-                ),
-              ),
-            ),
             // ── Hero Banner ──
             SliverToBoxAdapter(child: _HeroBanner()),
             // ── Quick Actions ──
@@ -76,10 +67,11 @@ class HomeScreen extends ConsumerWidget {
 // HEADER
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _HomeHeader extends StatelessWidget {
+class _HomeHeader extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final user = ref.watch(authControllerProvider).value;
     return Padding(
       padding: const EdgeInsets.fromLTRB(Sp.base, Sp.base, Sp.base, Sp.md),
       child: Row(
@@ -130,7 +122,14 @@ class _HomeHeader extends StatelessWidget {
           Stack(
             children: [
               IconButton(
-                onPressed: () {},
+                onPressed: () => context.push(
+                  AppRoutes.workInProgress,
+                  extra: const WorkInProgressScreenArgs(
+                    title: 'Notifications',
+                    description: 'Notification preferences, alerts, and inbox updates are coming soon.',
+                    icon: Icons.notifications_outlined,
+                  ),
+                ),
                 icon: const Icon(Icons.notifications_outlined),
                 style: IconButton.styleFrom(
                   backgroundColor: theme.colorScheme.surfaceContainerLow,
@@ -155,7 +154,7 @@ class _HomeHeader extends StatelessWidget {
               radius: 18,
               backgroundColor: theme.colorScheme.primaryContainer,
               child: Text(
-                'R',
+                user!.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : 'U',
                 style: TextStyle(fontWeight: FontWeight.w800, color: theme.colorScheme.primary),
               ),
             ),
@@ -314,7 +313,7 @@ class _QuickActionsSection extends StatelessWidget {
                   label: 'Create\nReport',
                   color: theme.colorScheme.primary,
                   bgColor: theme.colorScheme.primary.withOpacity(0.1),
-                  onTap: () {},
+                  onTap: () => context.go(AppRoutes.createReport),
                 ),
               ),
               const SizedBox(width: Sp.sm),
@@ -324,7 +323,14 @@ class _QuickActionsSection extends StatelessWidget {
                   label: 'News &\nAnnouncements',
                   color: const Color(0xFF6366F1),
                   bgColor: const Color(0xFFEEF2FF),
-                  onTap: () {},
+                  onTap: () => context.push(
+                    AppRoutes.workInProgress,
+                    extra: const WorkInProgressScreenArgs(
+                      title: 'News & Announcements',
+                      description: 'A full announcements feed is on the way.',
+                      icon: Icons.campaign_outlined,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(width: Sp.sm),
@@ -334,7 +340,7 @@ class _QuickActionsSection extends StatelessWidget {
                   label: 'My\nReports',
                   color: const Color(0xFF10B981),
                   bgColor: const Color(0xFFD1FAE5),
-                  onTap: () {},
+                  onTap: () => context.go(AppRoutes.userReports),
                 ),
               ),
               const SizedBox(width: Sp.sm),
@@ -344,7 +350,14 @@ class _QuickActionsSection extends StatelessWidget {
                   label: 'Help &\nFAQ',
                   color: const Color(0xFFF59E0B),
                   bgColor: const Color(0xFFFEF3C7),
-                  onTap: () {},
+                  onTap: () => context.push(
+                    AppRoutes.workInProgress,
+                    extra: const WorkInProgressScreenArgs(
+                      title: 'Help & FAQ',
+                      description: 'Guides, frequently asked questions, and support resources are being prepared.',
+                      icon: Icons.help_outline_rounded,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -551,7 +564,7 @@ class _SmallMetricTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: Sp.md, vertical: Sp.sm),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant,
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: Radii.card,
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
@@ -716,7 +729,17 @@ class _AnnouncementsPreviewSection extends StatelessWidget {
         children: [
           SectionHeader(
             title: 'Announcements',
-            action: TextButton(onPressed: () {}, child: const Text('See all')),
+            action: TextButton(
+              onPressed: () => context.push(
+                AppRoutes.workInProgress,
+                extra: const WorkInProgressScreenArgs(
+                  title: 'Announcements',
+                  description: 'A full announcements feed is on the way.',
+                  icon: Icons.campaign_outlined,
+                ),
+              ),
+              child: const Text('See all'),
+            ),
           ),
           ..._announcements.map(
             (a) => Container(

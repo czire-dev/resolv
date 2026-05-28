@@ -2,6 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:resolv/core/enums/incident_enums.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 
+DateTime _readDateTime(Object? value, {DateTime? fallback}) {
+  if (value is Timestamp) return value.toDate();
+  if (value is DateTime) return value;
+  return fallback ?? DateTime.now();
+}
+
 class IncidentModel {
   final String id;
 
@@ -43,6 +49,10 @@ class IncidentModel {
 
   factory IncidentModel.fromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final createdAt = _readDateTime(data['createdAt']);
+    final updatedAt = _readDateTime(data['updatedAt'], fallback: createdAt);
+    final lastReportAt = _readDateTime(data['lastReportAt'], fallback: updatedAt);
+
     return IncidentModel(
       id: doc.id,
       title: data['title'] as String,
@@ -52,9 +62,9 @@ class IncidentModel {
       tags: List<String>.from(data['tags'] ?? []),
       reportCount: data['reportCount'] as int,
       reportIds: List<String>.from(data['reportIds'] ?? []),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
-      lastReportAt: (data['lastReportAt'] as Timestamp).toDate(),
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      lastReportAt: lastReportAt,
       aiGenerated: data['aiGenerated'] as bool,
     );
   }

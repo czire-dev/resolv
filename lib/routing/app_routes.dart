@@ -25,6 +25,7 @@ abstract final class AppRoutes {
 
   // ── Admin ─────────────────────────────────────────────
   static const String adminReports = '/admin/reports';
+  static const String adminAllReports = '/admin/all-reports';
   static const String adminReportDetail = '/admin/reports/:reportId';
   static const String adminIncidents = '/admin/incidents';
 

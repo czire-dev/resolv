@@ -159,19 +159,6 @@ class _UserAllIncidentsScreenState
                                       : IncidentStatus.resolved;
                             }),
                           ),
-                          const SizedBox(width: 6),
-                          ..._categories.map((cat) => Padding(
-                                padding: const EdgeInsets.only(right: 6),
-                                child: _FilterChip(
-                                  label: cat.label,
-                                  selected: _selectedCategory == cat,
-                                  onTap: () => setState(() {
-                                    _selectedCategory =
-                                        _selectedCategory == cat ? null : cat;
-                                  }),
-                                  isCategory: true,
-                                ),
-                              )),
                         ],
                       ),
                     ),

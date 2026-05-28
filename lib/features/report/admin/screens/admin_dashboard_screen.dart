@@ -5,10 +5,12 @@ import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/core/themes/ui_constants.dart';
 import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:resolv/features/report/admin/widgets/admin_report_card.dart';
+import 'package:resolv/features/report/providers/admin_report_providers.dart';
 import 'package:resolv/features/report/providers/ai_providers.dart';
 import 'package:resolv/models/incident_model.dart';
 import 'package:resolv/models/report_model.dart';
 import 'package:resolv/routing/app_routes.dart';
+import 'package:resolv/shared/screens/work_in_progress_screen.dart';
 import 'package:resolv/shared/widgets/cards.dart';
 import 'package:resolv/shared/widgets/layouts.dart';
 
@@ -16,8 +18,7 @@ class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
-  ConsumerState<AdminDashboardScreen> createState() =>
-      _AdminDashboardScreenState();
+  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
 }
 
 class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
@@ -27,8 +28,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final reportsAsync = ref.watch(reportsStreamProvider);
-    final incidentsAsync =
-        ref.watch(incidentsStreamProvider((category: null, status: null)));
+    final recentReportsAsync = ref.watch(recentUnresolvedReportsStreamProvider);
+    final incidentsAsync = ref.watch(incidentsStreamProvider((category: null, status: null)));
     final openIncidentsAsync = ref.watch(openIncidentsStreamProvider);
     final duplicateReportsAsync = ref.watch(duplicateReportsStreamProvider);
 
@@ -40,8 +41,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             SliverToBoxAdapter(child: _AdminHeader()),
             SliverToBoxAdapter(
               child: Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(Sp.base, 0, Sp.base, Sp.base),
+                padding: const EdgeInsets.fromLTRB(Sp.base, 0, Sp.base, Sp.base),
                 child: SearchBarWidget(
                   hintText: 'Search incidents, reports...',
                   onFilterTap: () {},
@@ -62,9 +62,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 duplicateReportsAsync: duplicateReportsAsync,
               ),
             ),
-            SliverToBoxAdapter(
-              child: _ReportsListSection(reportsAsync: reportsAsync),
-            ),
+            SliverToBoxAdapter(child: _ReportsListSection(reportsAsync: recentReportsAsync)),
             SliverToBoxAdapter(
               child: _IncidentListSection(
                 incidentsAsync: incidentsAsync,
@@ -92,18 +90,11 @@ class _AdminHeader extends ConsumerWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary,
-              borderRadius: Radii.button,
-            ),
+            decoration: BoxDecoration(color: theme.colorScheme.primary, borderRadius: Radii.button),
             child: const Center(
               child: Text(
                 'R',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 22,
-                ),
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 22),
               ),
             ),
           ),
@@ -121,8 +112,7 @@ class _AdminHeader extends ConsumerWidget {
               Row(
                 children: [
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withOpacity(0.1),
                       borderRadius: Radii.chip,
@@ -145,7 +135,14 @@ class _AdminHeader extends ConsumerWidget {
           ),
           const Spacer(),
           IconButton(
-            onPressed: () {},
+            onPressed: () => context.push(
+              AppRoutes.workInProgress,
+              extra: const WorkInProgressScreenArgs(
+                title: 'Notifications',
+                description: 'Notification preferences, alerts, and inbox updates are coming soon.',
+                icon: Icons.notifications_outlined,
+              ),
+            ),
             icon: const Icon(Icons.notifications_outlined),
             style: IconButton.styleFrom(
               backgroundColor: theme.colorScheme.surfaceContainerLow,
@@ -160,10 +157,7 @@ class _AdminHeader extends ConsumerWidget {
               backgroundColor: theme.colorScheme.primaryContainer,
               child: Text(
                 'R',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: theme.colorScheme.primary,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w800, color: theme.colorScheme.primary),
               ),
             ),
             style: IconButton.styleFrom(
@@ -181,17 +175,12 @@ class _DeduplicationSystemBanner extends StatelessWidget {
   final AsyncValue<List<ReportModel>> reportsAsync;
   final AsyncValue<List<IncidentModel>> incidentsAsync;
 
-  const _DeduplicationSystemBanner({
-    required this.reportsAsync,
-    required this.incidentsAsync,
-  });
+  const _DeduplicationSystemBanner({required this.reportsAsync, required this.incidentsAsync});
 
   @override
   Widget build(BuildContext context) {
-    final groupedReports = _data(reportsAsync)
-            ?.where((r) => r.incidentId.trim().isNotEmpty)
-            .length ??
-        0;
+    final groupedReports =
+        _data(reportsAsync)?.where((r) => r.incidentId.trim().isNotEmpty).length ?? 0;
     final incidentCount = _data(incidentsAsync)?.length ?? 0;
 
     return Padding(
@@ -214,8 +203,7 @@ class _DeduplicationSystemBanner extends StatelessWidget {
                 color: Colors.white.withOpacity(0.1),
                 borderRadius: Radii.button,
               ),
-              child:
-                  const Icon(Icons.call_merge_rounded, color: Colors.white, size: 28),
+              child: const Icon(Icons.call_merge_rounded, color: Colors.white, size: 28),
             ),
             const SizedBox(width: Sp.md),
             Expanded(
@@ -234,8 +222,7 @@ class _DeduplicationSystemBanner extends StatelessWidget {
                       ),
                       const SizedBox(width: Sp.sm),
                       Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.15),
                           borderRadius: Radii.chip,
@@ -282,8 +269,7 @@ class _DeduplicationSystemBanner extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.auto_awesome_rounded,
-                color: Color(0xFFA5B4FC), size: 20),
+            const Icon(Icons.auto_awesome_rounded, color: Color(0xFFA5B4FC), size: 20),
           ],
         ),
       ),
@@ -309,17 +295,11 @@ class _KpiSection extends StatelessWidget {
     final reports = _data(reportsAsync) ?? const <ReportModel>[];
     final incidents = _data(incidentsAsync) ?? const <IncidentModel>[];
     final openIncidents = _data(openIncidentsAsync) ?? const <IncidentModel>[];
-    final duplicateReports =
-      _data(duplicateReportsAsync) ?? const <ReportModel>[];
 
     // Corrected AI grouped metric: count reports that have been linked to an incident
-    final groupedReportsCount = (reports
-            .where((r) => r.incidentId.trim().isNotEmpty)
-            .length)
-        ;
+    final groupedReportsCount = (reports.where((r) => r.incidentId.trim().isNotEmpty).length);
 
-    final pendingReports =
-        reports.where((r) => r.status.name == 'pending').length;
+    final pendingReports = reports.where((r) => r.status.name == 'pending').length;
     final highPriority = reports
         .where((r) => (r.aiAnalysis?.priority.toLowerCase() ?? '') == 'high')
         .length;
@@ -390,9 +370,13 @@ class _ReportsListSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(
+          SectionHeader(
             title: 'Reports',
-            subtitle: 'Real-time feed from Firestore',
+            subtitle: 'Recent unresolved reports only',
+            action: TextButton(
+              onPressed: () => context.go(AppRoutes.adminAllReports),
+              child: const Text('See All'),
+            ),
           ),
           reportsAsync.when(
             loading: () => const Padding(
@@ -411,12 +395,11 @@ class _ReportsListSection extends StatelessWidget {
 
               return Column(
                 children: reports
+                    .take(10)
                     .map(
                       (report) => AdminReportCard(
                         report: report,
-                        onTap: () => context.push(
-                          AppRoutes.adminReportPath(report.id),
-                        ),
+                        onTap: () => context.push(AppRoutes.adminReportPath(report.id)),
                       ),
                     )
                     .toList(),
@@ -470,14 +453,10 @@ class _IncidentListSection extends StatelessWidget {
                   selectedColor: theme.colorScheme.primary.withOpacity(0.15),
                   labelStyle: TextStyle(
                     fontWeight: FontWeight.w700,
-                    color: selected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface,
+                    color: selected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
                   ),
                   side: BorderSide(
-                    color: selected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.outlineVariant,
+                    color: selected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant,
                   ),
                   visualDensity: VisualDensity.compact,
                 );
@@ -515,9 +494,7 @@ class _IncidentListSection extends StatelessWidget {
                         lastUpdated: _timeAgo(incident.updatedAt),
                         aiGenerated: incident.aiGenerated,
                         tags: incident.tags,
-                        onTap: () => context.push(
-                          AppRoutes.adminIncidentDetail(incident.id),
-                        ),
+                        onTap: () => context.push(AppRoutes.adminIncidentDetail(incident.id)),
                       ),
                     )
                     .toList(),
@@ -529,10 +506,7 @@ class _IncidentListSection extends StatelessWidget {
     );
   }
 
-  List<IncidentModel> _applyIncidentFilter(
-    List<IncidentModel> incidents,
-    String filter,
-  ) {
+  List<IncidentModel> _applyIncidentFilter(List<IncidentModel> incidents, String filter) {
     if (filter == 'All') return incidents;
 
     final normalized = filter.toLowerCase();
@@ -542,6 +516,97 @@ class _IncidentListSection extends StatelessWidget {
       }
       return incident.priority.name == normalized;
     }).toList();
+  }
+}
+
+class AdminReportsScreen extends ConsumerWidget {
+  const AdminReportsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final reportsAsync = ref.watch(adminReportListProvider);
+    final notifier = ref.read(adminReportListProvider.notifier);
+
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Sp.base, Sp.base, Sp.base, Sp.md),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => context.go(AppRoutes.adminReports),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                    ),
+                    const SizedBox(width: Sp.xs),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'All Reports',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text('Realtime admin report feed', style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            reportsAsync.when(
+              loading: () =>
+                  const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
+              error: (error, _) =>
+                  SliverFillRemaining(child: ErrorStateWidget(message: error.toString())),
+              data: (reports) {
+                if (reports.isEmpty) {
+                  return const SliverFillRemaining(
+                    child: EmptyStateWidget(
+                      icon: Icons.description_outlined,
+                      title: 'No reports yet',
+                      message: 'Incoming reports will appear here in real-time.',
+                    ),
+                  );
+                }
+
+                return SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(Sp.base, 0, Sp.base, Sp.xl),
+                  sliver: SliverList.separated(
+                    itemCount: reports.length + (notifier.hasMore ? 1 : 0),
+                    separatorBuilder: (_, __) => const SizedBox(height: Sp.sm),
+                    itemBuilder: (context, index) {
+                      if (index >= reports.length) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: Sp.sm),
+                          child: OutlinedButton(
+                            onPressed: notifier.hasMore ? notifier.loadMore : null,
+                            child: Text(notifier.hasMore ? 'Load More' : 'No More Reports'),
+                          ),
+                        );
+                      }
+
+                      final report = reports[index];
+                      return AdminReportCard(
+                        report: report,
+                        onTap: () => context.push(AppRoutes.adminReportPath(report.id)),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

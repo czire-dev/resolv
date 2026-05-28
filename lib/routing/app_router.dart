@@ -189,6 +189,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+      GoRoute(
+        path: AppRoutes.adminAllReports,
+        builder: (context, state) => const AdminReportsScreen(),
+      ),
 
       // ── Admin Incident routes ───────────────────────────
       GoRoute(
@@ -211,7 +215,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // ── Work In Progress ───────────────────────────────
       GoRoute(
         path: AppRoutes.workInProgress,
-        builder: (context, state) => const WorkInProgressScreen(title: 'Work In Progress'),
+        builder: (context, state) {
+          final args = state.extra is WorkInProgressScreenArgs
+              ? state.extra as WorkInProgressScreenArgs
+              : null;
+
+          return WorkInProgressScreen(
+            title: args?.title ?? 'Work In Progress',
+            description:
+                args?.description ?? 'This feature is being polished and will be available soon.',
+            icon: args?.icon ?? Icons.construction_outlined,
+          );
+        },
       ),
     ],
   );
