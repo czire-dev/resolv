@@ -6,7 +6,7 @@ import 'package:resolv/models/incident_model.dart';
 import 'package:resolv/models/report_model.dart';
 import 'package:resolv/services/incident_service.dart';
 import 'package:resolv/services/report_service.dart';
-import 'package:resolv/features/report/repositories/ai_repository.dart';
+import 'package:resolv/features/ai/repositories/ai_repository.dart';
 
 /// Controller for AI-driven report analysis and incident management.
 /// Orchestrates the workflow for classifying reports and deduplicating incidents.

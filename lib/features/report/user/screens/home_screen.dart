@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/core/themes/ui_constants.dart';
 import 'package:resolv/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:resolv/features/report/providers/ai_providers.dart';
+import 'package:resolv/features/ai/providers/ai_providers.dart';
 import 'package:resolv/features/report/providers/incident_providers.dart';
 import 'package:resolv/routing/app_routes.dart';
 import 'package:resolv/shared/widgets/cards.dart';

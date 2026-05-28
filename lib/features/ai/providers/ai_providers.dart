@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:resolv/core/enums/report_enums.dart';
-import 'package:resolv/features/report/controllers/ai_controller.dart';
-import 'package:resolv/features/report/controllers/ai_notifier.dart';
-import 'package:resolv/features/report/repositories/ai_repository.dart';
+import 'package:resolv/features/ai/controllers/ai_controller.dart';
+import 'package:resolv/features/ai/controllers/ai_notifier.dart';
+import 'package:resolv/features/ai/repositories/ai_repository.dart';
 import 'package:resolv/models/incident_model.dart';
 import 'package:resolv/models/report_model.dart';
 import 'package:resolv/services/ai_service.dart';

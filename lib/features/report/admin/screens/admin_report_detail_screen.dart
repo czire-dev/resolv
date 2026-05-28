@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/features/report/admin/widgets/admin_status_bottom_modal_sheet.dart';
-import 'package:resolv/features/report/providers/ai_providers.dart';
+import 'package:resolv/features/ai/providers/ai_providers.dart';
 import 'package:resolv/models/ai_analysis_model.dart';
 import 'package:resolv/models/report_remark_model.dart';
 import 'package:resolv/shared/widgets/layouts.dart';

@@ -2,7 +2,7 @@ import 'package:resolv/core/utils/result.dart';
 import 'package:resolv/models/ai_analysis_model.dart';
 import 'package:resolv/models/incident_model.dart';
 import 'package:resolv/models/report_model.dart';
-import 'package:resolv/services/ai/duplicate_check_result.dart';
+import 'package:resolv/models/duplicate_check_result.dart';
 import 'package:resolv/services/ai_service.dart';
 
 /// Repository layer for AI analysis features.

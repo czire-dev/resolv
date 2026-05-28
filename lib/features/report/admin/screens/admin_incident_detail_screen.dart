@@ -5,7 +5,7 @@ import 'package:resolv/core/enums/incident_enums.dart';
 import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/core/themes/ui_constants.dart';
 import 'package:resolv/features/report/admin/widgets/admin_widgets.dart';
-import 'package:resolv/features/report/providers/ai_providers.dart';
+import 'package:resolv/features/ai/providers/ai_providers.dart';
 import 'package:resolv/features/report/providers/incident_providers.dart';
 import 'package:resolv/models/incident_model.dart';
 import 'package:resolv/models/report_model.dart';

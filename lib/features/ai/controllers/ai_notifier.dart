@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:resolv/features/report/controllers/ai_controller.dart';
-import 'package:resolv/features/report/providers/ai_providers.dart';
+import 'package:resolv/features/ai/controllers/ai_controller.dart';
+import 'package:resolv/features/ai/providers/ai_providers.dart';
 import 'package:resolv/models/report_model.dart';
 
 /// State representing the result of an AI analysis workflow.

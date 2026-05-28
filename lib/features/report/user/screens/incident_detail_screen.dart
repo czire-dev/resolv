@@ -7,7 +7,7 @@ import 'package:resolv/core/enums/report_enums.dart';
 import 'package:resolv/models/incident_model.dart';
 import 'package:resolv/models/report_model.dart';
 import 'package:resolv/features/report/providers/incident_providers.dart';
-import 'package:resolv/features/report/providers/ai_providers.dart';
+import 'package:resolv/features/ai/providers/ai_providers.dart';
 
 // ---------------------------------------------------------------------------
 // Screen
